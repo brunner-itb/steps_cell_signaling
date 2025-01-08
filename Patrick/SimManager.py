@@ -11,22 +11,22 @@ import time
 
 
 class SimManager:
-    def __init__(self, parameters, species_names, end_time, mesh_path, save_dir="saved_objects/initial_run/"):
+    def __init__(self, parameters, species_names, endt, mesh_path, save_file="saved_objects/initial_run/initial_run.h5"):
         """
         Initialize the simulation model.
 
         Args:
             parameters (dict): Dictionary containing parameters like diffusion constants,
                                reaction rates, etc.
-            end_time (float): The time for which the simulation will run.
+            endt (float): The time for which the simulation will run.
             mesh_path (str): Path to the mesh file for the model geometry.
             save_dir (str): Directory where results will be saved.
         """
         self.parameters = parameters
         self.species_names = species_names
-        self.end_time = end_time
+        self.end_time = endt
         self.mesh_path = mesh_path
-        self.save_dir = save_dir
+        self.save_file = save_file
         self.model = None
         self.simulation = None
         self.result_selectors = None
@@ -39,8 +39,8 @@ class SimManager:
         """
         Set up directories and environment.
         """
-        if not os.path.exists(self.save_dir):
-            os.makedirs(self.save_dir)
+        if not os.path.exists(self.save_file):
+            os.makedirs(self.save_file)
 
     def load_model(self):
         self.simulation = create_model(self.parameters, self.species_names, self.mesh_path)
@@ -53,17 +53,17 @@ class SimManager:
         Args:
             run_id (int): Identifier for the current simulation run.
         """
-        with stsave.HDF5Handler(self.save_dir) as hdf:
+        with stsave.HDF5Handler(self.save_file) as hdf:
             self.simulation.toDB(hdf, f'initial_run', run_id=run_id)
             self.simulation.newRun()
             self.simulation.exo.EGF.Count = 4e4
             self.simulation.cell_surface.EGFR.Count = 7.8e4
             self.simulation.cyt.GAP.Count = 2.3e4
-            self.simulation.cyt.X.Count = 4.1e4
+            # self.simulation.cyt.X.Count = 4.1e4
             # self.simulation.nuc_mem.Xa.DiffusionActive = True
 
             start_time = time.time()
-            self.simulation.run(self.end_time)
+            self.simulation.run(self.endt)
             end_time = time.time()
 
             print(f"Run {run_id} completed in {end_time - start_time:.2f} seconds.")

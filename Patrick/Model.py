@@ -105,9 +105,9 @@ def create_model(p, species_names, mesh_path):
     # Define results
     rs = stsave.ResultSelector(simulation)
     result_selectors = {
-        "EGF_EGFR": rs.SUM(rs.TRIS(cell_tets.surface).species_dict["EGF_EGFR"].Count),
-        "EGF_EGFRp2": rs.SUM(rs.TRIS(cell_tets.surface).species_dict["EGF_EGFRp2"].Count),
-        "EGF_EGFRp2_GAP": rs.SUM(rs.TRIS(cell_tets.surface).species_dict["EGF_EGFRp2_GAP"].Count),
+        "EGF_EGFR": rs.SUM(rs.TRIS(cell_tets.surface).EGF_EGFR.Count),
+        "EGF_EGFRp2": rs.SUM(rs.TRIS(cell_tets.surface).EGF_EGFRp2.Count),
+        "EGF_EGFRp2_GAP": rs.SUM(rs.TRIS(cell_tets.surface).EGF_EGFRp2_GAP.Count),
     }
 
     # Schedule saving
