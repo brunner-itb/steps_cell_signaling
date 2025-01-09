@@ -4,7 +4,7 @@ import steps.geom as stgeom
 import steps.rng as strng
 import steps.sim as stsim
 import steps.saving as stsave
-from Model import create_model
+from src.Model import create_model
 import numpy as np
 import os
 import time

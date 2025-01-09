@@ -11,6 +11,10 @@ def process_mesh(mesh_path, scale):
 
     Returns:
         stgeom.TetMesh: Loaded mesh object.
+
+    Issue: STEPS documentation mentions that initializing TetMesh with .inp files is very inefficient. The TetMesh
+    should instead be created once and then saved using the stgeom.TetMesh.Save() function. This seems to be broken as
+    loading a .xml file created in this way does not work.
     """
     assert os.path.isfile(mesh_path), f"Error: The file '{mesh_path}' does not exist. Please check the path."
 
@@ -18,9 +22,7 @@ def process_mesh(mesh_path, scale):
     file_name = os.path.splitext(mesh_path)[0]
 
     if file_ext == ".inp":
-        # Check if an equivalent .xml file exists
         xml_path = file_name + ".xml"
-
         if os.path.isfile(xml_path):
             print(f"Warning: A .xml version of the file '{mesh_path}' exists. Loading '{xml_path}' instead.")
             return stgeom.TetMesh.Load(file_name, scale=scale)

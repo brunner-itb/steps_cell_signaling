@@ -22,21 +22,13 @@ def create_model(p, species_names, mesh_path):
     # Create volume and surface systems
     with mdl:
         volume_system = stmodel.VolumeSystem.Create()
-        extracellular_volume = stmodel.VolumeSystem.Create()
         nucleus_volume = stmodel.VolumeSystem.Create()
+        extracellular_volume = stmodel.VolumeSystem.Create()
         cell_surface = stmodel.SurfaceSystem.Create()
 
         # Create a dictionary to hold the created species
         for sp_name in species_names:
             species_dict[sp_name] = stmodel.Species(name=sp_name)
-
-
-        # # Volume system
-        # with volume_system:
-        #     Xa > r[666] > X
-        #     r[666].K = p["k[666]"]
-        #     stmodel.Diffusion(X, species_dict["DCX"])
-        #     stmodel.Diffusion(Xa, species_dict["DCX"])
 
         # Extracellular volume
         with extracellular_volume:
@@ -54,8 +46,8 @@ def create_model(p, species_names, mesh_path):
             species_dict["EGF_EGFR"].s + species_dict["EGF_EGFR"].s < r[2] > species_dict["EGF_EGFR2"].s
             species_dict["EGF_EGFR2"].s < r[3] > species_dict["EGF_EGFRp2"].s
             species_dict["EGF_EGFRp2"].s + species_dict["GAP"].i < r[5] > species_dict["EGF_EGFRp2_GAP"].s
-            species_dict["EGF_EGFRp2_GAP"].s < r[0] > species_dict["EGF_EGFRp2_GAP"].s
-            r[0].K = p["k[0]"], 0.1
+            # species_dict["EGF_EGFRp2_GAP"].s < r[0] > species_dict["EGF_EGFRp2_GAP"].s
+            # r[0].K = p["k[0]"], 0.1
             r[1].K = 3e7 * c1, 38e-4 * c1
             r[2].K = 1e7 * c2, 0.1 * c2
             r[3].K = 1, 0.01

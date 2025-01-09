@@ -1,4 +1,4 @@
-from SimManager import SimManager
+from src.SimManager import SimManager
 from parameters import p
 
 species_names = ["EGF", "EGFR", "Xa", "XA", "EGF_EGFR", "EGF_EGFR2",
