@@ -106,4 +106,4 @@ def create_model(p, species_names, mesh_path):
     for key, sel in result_selectors.items():
         simulation.toSave(sel, dt=p["time step"])
 
-    return simulation
+    return simulation, rs

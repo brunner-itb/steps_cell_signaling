@@ -4,7 +4,7 @@ import steps.geom as stgeom
 import steps.rng as strng
 import steps.sim as stsim
 import steps.saving as stsave
-from src.Model import create_model
+import warnings
 import numpy as np
 import os
 import time
@@ -27,8 +27,8 @@ class SimManager:
         self.end_time = endt
         self.mesh_path = mesh_path
         self.save_file = save_file
-        self.model = None
         self.simulation = None
+        self.result_selector = None
         self.result_selectors = None
         self.cell_tets = None
         self.nuc_tets = None
@@ -42,8 +42,14 @@ class SimManager:
         if not os.path.exists(self.save_file):
             os.makedirs(self.save_file)
 
-    def load_model(self):
-        self.simulation = create_model(self.parameters, self.species_names, self.mesh_path)
+    def load_model(self, type):
+        if type == "small":
+            from src.Model_small import create_model
+            self.simulation, self.result_selector = create_model(self.parameters, self.species_names, self.mesh_path)
+        elif type == "large":
+            warnings.warn("The 'large' model type is not yet implemented", UserWarning)
+        else:
+            warnings.warn(f"The '{type}' model type is not yet implemented", UserWarning)
 
     def run(self, run_id=0):
         """
