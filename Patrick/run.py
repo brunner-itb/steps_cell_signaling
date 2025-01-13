@@ -10,13 +10,4 @@ sm = SimManager(parameters=p,
                 mesh_path = "/home/pb/steps_cell_signaling/Patrick/meshes/kugel04.inp",
                 save_file="saved_objects/initial_run/initial_run.h5")
 sm.load_model(type="small")
-# sm.run(run_id=0)
-
-import steps.interface
-import steps.model as stmodel
-import steps.geom as stgeom
-import steps.rng as strng
-import steps.sim as stsim
-import steps.saving as stsave
-import steps.visual as stvis
-sc = stvis.SimControl(end_time = 0, upd_interval = 0.0001)
+sm.run(run_id=0)
