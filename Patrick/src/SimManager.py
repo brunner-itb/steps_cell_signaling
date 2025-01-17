@@ -13,15 +13,33 @@ import time
 class SimManager:
     def __init__(self, parameters, species_names, endt, mesh_path, save_file="saved_objects/initial_run/initial_run.h5"):
         """
-        Initialize the simulation model.
+        Manages the configuration, setup, and execution of biochemical simulations.
 
-        Args:
-            parameters (dict): Dictionary containing parameters like diffusion constants,
-                               reaction rates, etc.
-            endt (float): The time for which the simulation will run.
-            mesh_path (str): Path to the mesh file for the model geometry.
-            save_dir (str): Directory where results will be saved.
+        The `SimManager` class provides a high-level interface for initializing,
+        configuring, and running simulations based on user-defined parameters.
+        It is responsible for loading simulation models, setting up the required environment,
+        and executing the simulation runs while saving the results in an HDF5 file.
+
+        Attributes:
+            parameters (dict): Dictionary containing the simulation parameters like
+                               diffusion constants, reaction rates, etc.
+            species_names (list): List of molecular species names involved in the simulation.
+            end_time (int): Total simulation runtime, in seconds.
+            mesh_path (str): File path to the geometry mesh used in the simulation.
+            save_file (str): Path where simulation results will be stored.
+            simulation (object): The initialized simulation instance.
+
+        Methods:
+            __init__(parameters, species_names, endt, mesh_path, save_file):
+                Initializes the simulation manager and sets up the environment.
+            _setup_environment():
+                Ensures the necessary directory structure exists for saving simulation results.
+            load_model(type):
+                Loads a simulation model based on the provided type ("small" or "large").
+            run(run_id=0):
+                Executes the simulation and saves the results to an HDF5 file.
         """
+
         self.parameters = parameters
         self.species_names = species_names
         self.end_time = endt
@@ -29,7 +47,7 @@ class SimManager:
         self.save_file = save_file
         self.simulation = None
         self.result_selector = None
-        self.result_selectors = None
+        self.mesh = None
         self.cell_tets = None
         self.nuc_tets = None
 
@@ -45,7 +63,7 @@ class SimManager:
     def load_model(self, type):
         if type == "small":
             from src.Model_small import create_model
-            self.simulation, self.result_selector = create_model(self.parameters, self.species_names, self.mesh_path)
+            self.simulation, self.result_selector, self.mesh = create_model(self.parameters, self.species_names, self.mesh_path)
         elif type == "large":
             warnings.warn("The 'large' model type is not yet implemented", UserWarning)
         else:
@@ -69,7 +87,7 @@ class SimManager:
             # self.simulation.nuc_mem.Xa.DiffusionActive = True
 
             start_time = time.time()
-            self.simulation.run(self.endt)
+            self.simulation.run(self.end_time)
             end_time = time.time()
 
             print(f"Run {run_id} completed in {end_time - start_time:.2f} seconds.")

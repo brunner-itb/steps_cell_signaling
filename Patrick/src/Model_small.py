@@ -11,7 +11,39 @@ import os
 
 def create_model(p, species_names, mesh_path):
     """
-    Create the model, compartments, and simulation based on p.
+    Creates a STEPS simulation model based on parameters, species, and mesh geometry.
+
+    Parameters:
+    -----------
+    p : dict
+        Simulation parameters including diffusion constants (`p["DC"]`), reaction rates,
+        and time step (`p["time step"]`).
+
+    species_names : list of str
+        Names of chemical species to be defined in the model.
+
+    mesh_path : str
+        Path to the Abaqus mesh file defining system geometry, scaled to micrometers.
+
+    Returns:
+    --------
+    simulation : steps.sim.Simulation
+        Configured STEPS simulation object.
+
+    rs : steps.saving.ResultSelector
+        Object for selecting and storing simulation results.
+
+    Raises:
+    -------
+    AssertionError:
+        If the provided `mesh_path` is invalid.
+
+    Notes:
+    ------
+    - Defines species diffusion, surface and volumetric reactions (e.g., EGF-EGFR binding).
+    - Partitions the mesh into compartments: nucleus, cytoplasm, extracellular space,
+      and membrane patch.
+    - Sets up a stochastic simulation engine with result selectors for species counts.
     """
     c1 = 1
     c2 = 1
@@ -106,4 +138,4 @@ def create_model(p, species_names, mesh_path):
     for key, sel in result_selectors.items():
         simulation.toSave(sel, dt=p["time step"])
 
-    return simulation, rs
+    return simulation, rs, mesh
