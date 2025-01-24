@@ -159,7 +159,9 @@ def create_model(p, species_names, mesh_path):
 
     # Initialize RNG and Simulation
     rng = strng.RNG("mt19937", 512, 2903)
-    simulation = stsim.Simulation("Tetexact", mdl, mesh, rng)
+    partition = stgeom.LinearMeshPartition(mesh, 1, 1, stsim.MPI.nhosts)
+    simulation = stsim.Simulation("TetOpSplit", mdl, mesh, rng, False, partition)
+   
 
 
     # Define results

@@ -11,7 +11,7 @@ import time
 
 
 class SimManager:
-    def __init__(self, parameters, species_names, endt, mesh_path, save_file="saved_objects/initial_run/initial_run.h5"):
+    def __init__(self, parameters, species_names, endt, mesh_path, save_file="saved_objects/initial_run/initial_run.h5", parallel=False, runname: str = "initial_run"):
         """
         Manages the configuration, setup, and execution of biochemical simulations.
 
@@ -50,6 +50,8 @@ class SimManager:
         self.mesh = None
         self.cell_tets = None
         self.nuc_tets = None
+        self.parallel = parallel
+        self.runname = runname
 
         self._setup_environment()
 
@@ -57,8 +59,10 @@ class SimManager:
         """
         Set up directories and environment.
         """
+        
         if not os.path.exists(self.save_file):
             os.makedirs(self.save_file)
+
 
     def load_model(self, type):
         if type == "small":
@@ -78,7 +82,7 @@ class SimManager:
             run_id (int): Identifier for the current simulation run.
         """
         with stsave.HDF5Handler(self.save_file) as hdf:
-            self.simulation.toDB(hdf, f'initial_run', run_id=run_id)
+            self.simulation.toDB(hdf,self.runname, run_id=run_id)
             self.simulation.newRun()
             self.simulation.exo.EGF.Count = 4e4
             self.simulation.cell_surface.EGFR.Count = 7.8e4

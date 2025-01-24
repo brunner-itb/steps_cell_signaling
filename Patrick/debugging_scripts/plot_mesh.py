@@ -11,7 +11,7 @@ import pandas as pd
 
 #%%
 
-mesh_path = f'/home/pb/steps_cell_signaling/Patrick/meshes/kugel_7.5.inp'
+mesh_path = f'/home/evelyn/shared_files/signaling_repo/steps_cell_signaling/Patrick/meshes/.inp/kugel_7.5-ext.inp'
 assert os.path.exists(mesh_path)
 
 mdl = Model()
