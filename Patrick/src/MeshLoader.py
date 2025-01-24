@@ -1,6 +1,7 @@
 import os
 import steps.interface
 import steps.geom as stgeom
+import numpy as np
 
 def process_mesh(mesh_path, scale):
     """

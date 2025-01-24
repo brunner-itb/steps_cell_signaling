@@ -23,8 +23,8 @@ def traverse_datasets(hdf_file):
     return None
 
 
-traverse_datasets("/home/pb/steps_cell_signaling/Patrick/saved_objects/initial_run/initial_run.h5")
-
+# traverse_datasets("/home/pb/steps_cell_signaling/Patrick/saved_objects/initial_run/initial_run.h5")
+#%%
 with stsave.HDF5Handler("/home/pb/steps_cell_signaling/Patrick/saved_objects/initial_run/initial_run") as hdf:
     A, B, C = hdf['initial_run'].results
     names = ["A", "B", "C"]
@@ -32,8 +32,10 @@ with stsave.HDF5Handler("/home/pb/steps_cell_signaling/Patrick/saved_objects/ini
     # Membrane potential
     for idx, res in enumerate([A, B, C]):
         plt.figure(figsize=(10, 7))
+        time = []
         for r in range(len(res.time)):
-            plt.plot(res.time[r], 1e3 * res.data[r, :, 0], label=f'Run {r}')
+            time.append(res.time[r])
+            plt.plot(res.time[r], 1e3 * res.data[r, :, 0], label=f'Compound No. {r}')
         plt.legend()
         plt.xlabel('Time [s]')
         plt.ylabel(names[idx])

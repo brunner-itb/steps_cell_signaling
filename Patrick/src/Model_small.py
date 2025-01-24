@@ -4,9 +4,42 @@ import steps.geom as stgeom
 import steps.rng as strng
 import steps.sim as stsim
 import steps.saving as stsave
+from src.Utilities import molar_to_molecules
 import numpy as np
 import os
 
+
+def initialize_mesh(mesh_path, scale, nucleus_volume, volume_system, extracellular_volume, cell_surface):
+    # Load mesh and compartments
+    assert os.path.isfile(mesh_path), "mesh_path does not exist. Please check the path and try again."
+    mesh = stgeom.TetMesh.LoadAbaqus(mesh_path, scale=scale)
+
+    with mesh:
+        # Zelle
+        cell_tets = stgeom.TetList(mesh.tetGroups["Volume2"])
+
+        # Zellkern
+        nuc_tets = stgeom.TetList(
+            (tet for tet in cell_tets if np.linalg.norm(tet.center) < 5e-6))
+
+        mem_tris = cell_tets.surface
+        mem_tet = stgeom.TetList()
+        for tri in mem_tris:
+            for tet in tri.tetNeighbs:
+                mem_tet.append(tet)
+        mem_tet = stgeom.TetList([tet for tet in mem_tet if tet in cell_tets])
+
+        # Create compartments
+        # nucleus
+        nuc = stgeom.Compartment.Create(nuc_tets, nucleus_volume)
+        # Cytoplasm
+        cyt = stgeom.Compartment.Create(cell_tets - nuc_tets, volume_system)
+        # Extracellular volume
+        exo = stgeom.Compartment.Create(mesh.tetGroups["Volume3"], extracellular_volume)
+        # Cell membrane
+        cell_surface = stgeom.Patch.Create(cell_tets.surface, cyt, exo, cell_surface)
+
+    return mesh, cell_tets
 
 
 def create_model(p, species_names, mesh_path):
@@ -66,12 +99,14 @@ def create_model(p, species_names, mesh_path):
         with extracellular_volume:
             stmodel.Diffusion(species_dict["EGF"], p["DC"])
 
-        # Nucleus
-        # with nucleus_volume:
-        #     Xa > r[777] > XA
-        #     r[777].K = 1e8
-        #     stmodel.Diffusion(Xa, species_dict["DCX"])
-
+        # Load mesh and compartments
+        mesh, cell_tets = initialize_mesh(mesh_path,
+                               scale=10 ** -6,
+                               nucleus_volume=nucleus_volume,
+                               volume_system=volume_system,
+                               extracellular_volume=extracellular_volume,
+                               cell_surface=cell_surface)
+        system_volume = mesh.Vol
         # Surface system (cell membrane)
         with cell_surface:
             species_dict["EGFR"].s + species_dict["EGF"].o < r[1] > species_dict["EGF_EGFR"].s
@@ -81,7 +116,8 @@ def create_model(p, species_names, mesh_path):
             # species_dict["EGF_EGFRp2_GAP"].s < r[0] > species_dict["EGF_EGFRp2_GAP"].s
             # r[0].K = p["k[0]"], 0.1
             r[1].K = 3e7 * c1, 38e-4 * c1
-            r[2].K = 1e7 * c2, 0.1 * c2
+            r[2].K = (1e7 * c2)/molar_to_molecules(1, system_volume), (0.1 * c2)/molar_to_molecules(1, system_volume)
+            print(" Is the unit conversion even necessary? Does STEPS handle it internally? Research!")
             r[3].K = 1, 0.01
             r[5].K = 1e6 * c1, 0.2 * c1
 
@@ -91,34 +127,34 @@ def create_model(p, species_names, mesh_path):
             stmodel.Diffusion(species_dict["EGF_EGFRp2"], p["DC"])
             stmodel.Diffusion(species_dict["EGF_EGFRp2_GAP"], p["DC"])
 
-    # Load mesh and compartments
-    assert os.path.isfile(mesh_path), "mesh_path does not exist. Please check the path and try again."
-    mesh = stgeom.TetMesh.LoadAbaqus(mesh_path, scale=10 ** -6)
-
-    with mesh:
-        # Zelle
-        cell_tets = stgeom.TetList(mesh.tetGroups["Volume2"])
-
-        # Zellkern
-        nuc_tets = stgeom.TetList(
-            (tet for tet in cell_tets if np.linalg.norm(tet.center) < 5e-6))
-
-        mem_tris = cell_tets.surface
-        mem_tet = stgeom.TetList()
-        for tri in mem_tris:
-            for tet in tri.tetNeighbs:
-                mem_tet.append(tet)
-        mem_tet = stgeom.TetList([tet for tet in mem_tet if tet in cell_tets])
-
-        # Create compartments
-        # nucleus
-        nuc = stgeom.Compartment.Create(nuc_tets, nucleus_volume)
-        # Cytoplasm
-        cyt = stgeom.Compartment.Create(cell_tets - nuc_tets, volume_system)
-        # Extracellular volume
-        exo = stgeom.Compartment.Create(mesh.tetGroups["Volume3"], extracellular_volume)
-        # Cell membrane
-        cell_surface = stgeom.Patch.Create(cell_tets.surface, cyt, exo, cell_surface)
+    # # Load mesh and compartments
+    # assert os.path.isfile(mesh_path), "mesh_path does not exist. Please check the path and try again."
+    # mesh = stgeom.TetMesh.LoadAbaqus(mesh_path, scale=10 ** -6)
+    #
+    # with mesh:
+    #     # Zelle
+    #     cell_tets = stgeom.TetList(mesh.tetGroups["Volume2"])
+    #
+    #     # Zellkern
+    #     nuc_tets = stgeom.TetList(
+    #         (tet for tet in cell_tets if np.linalg.norm(tet.center) < 5e-6))
+    #
+    #     mem_tris = cell_tets.surface
+    #     mem_tet = stgeom.TetList()
+    #     for tri in mem_tris:
+    #         for tet in tri.tetNeighbs:
+    #             mem_tet.append(tet)
+    #     mem_tet = stgeom.TetList([tet for tet in mem_tet if tet in cell_tets])
+    #
+    #     # Create compartments
+    #     # nucleus
+    #     nuc = stgeom.Compartment.Create(nuc_tets, nucleus_volume)
+    #     # Cytoplasm
+    #     cyt = stgeom.Compartment.Create(cell_tets - nuc_tets, volume_system)
+    #     # Extracellular volume
+    #     exo = stgeom.Compartment.Create(mesh.tetGroups["Volume3"], extracellular_volume)
+    #     # Cell membrane
+    #     cell_surface = stgeom.Patch.Create(cell_tets.surface, cyt, exo, cell_surface)
 
 
     # Initialize RNG and Simulation
