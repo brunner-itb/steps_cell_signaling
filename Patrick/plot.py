@@ -23,10 +23,10 @@ def traverse_datasets(hdf_file):
     return None
 
 
-# traverse_datasets("/home/pb/steps_cell_signaling/Patrick/saved_objects/initial_run/initial_run.h5")
+traverse_datasets("/home/pb/steps_cell_signaling/Patrick/saved_objects/initial_run/parallel_run.h5.h5")
 #%%
-with stsave.HDF5Handler("/home/pb/steps_cell_signaling/Patrick/saved_objects/initial_run/initial_run") as hdf:
-    A, B, C = hdf['initial_run'].results
+with stsave.HDF5Handler("/home/pb/steps_cell_signaling/Patrick/saved_objects/initial_run/parallel_run.h5") as hdf:
+    A, B, C = hdf['parallel_run'].results
     names = ["A", "B", "C"]
 
     # Membrane potential

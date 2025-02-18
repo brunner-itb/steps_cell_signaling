@@ -11,7 +11,7 @@ import time
 
 
 class SimManager:
-    def __init__(self, parameters, species_names, endt, mesh_path, save_file="saved_objects/initial_run/initial_run.h5", parallel=False, runname: str = "initial_run"):
+    def __init__(self, parameters, species_names, mesh_path, save_file="saved_objects/initial_run/initial_run.h5", parallel=False, runname: str = "initial_run"):
         """
         Manages the configuration, setup, and execution of biochemical simulations.
 
@@ -24,7 +24,7 @@ class SimManager:
             parameters (dict): Dictionary containing the simulation parameters like
                                diffusion constants, reaction rates, etc.
             species_names (list): List of molecular species names involved in the simulation.
-            end_time (int): Total simulation runtime, in seconds.
+            endtime (int): Total simulation runtime, in seconds.
             mesh_path (str): File path to the geometry mesh used in the simulation.
             save_file (str): Path where simulation results will be stored.
             simulation (object): The initialized simulation instance.
@@ -42,7 +42,7 @@ class SimManager:
 
         self.parameters = parameters
         self.species_names = species_names
-        self.end_time = endt
+        self.endtime = self.parameters["endtime"]
         self.mesh_path = mesh_path
         self.save_file = save_file
         self.simulation = None
@@ -59,9 +59,11 @@ class SimManager:
         """
         Set up directories and environment.
         """
-        
-        if not os.path.exists(self.save_file):
-            os.makedirs(self.save_file)
+
+        save_dir = os.path.dirname(self.save_file)  # Get the parent directory of the save file
+
+        if not os.path.exists(save_dir):  # Check if the directory exists
+            os.makedirs(save_dir)  # Create it if it doesn't exist
 
 
     def load_model(self, type):
@@ -91,7 +93,7 @@ class SimManager:
             # self.simulation.nuc_mem.Xa.DiffusionActive = True
 
             start_time = time.time()
-            self.simulation.run(self.end_time)
+            self.simulation.run(self.endtime)
             end_time = time.time()
 
             print(f"Run {run_id} completed in {end_time - start_time:.2f} seconds.")

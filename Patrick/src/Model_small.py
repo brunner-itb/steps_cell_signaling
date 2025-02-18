@@ -116,8 +116,7 @@ def create_model(p, species_names, mesh_path):
             # species_dict["EGF_EGFRp2_GAP"].s < r[0] > species_dict["EGF_EGFRp2_GAP"].s
             # r[0].K = p["k[0]"], 0.1
             r[1].K = 3e7 * c1, 38e-4 * c1
-            r[2].K = (1e7 * c2)/molar_to_molecules(1, system_volume), (0.1 * c2)/molar_to_molecules(1, system_volume)
-            print(" Is the unit conversion even necessary? Does STEPS handle it internally? Research!")
+            r[2].K = 1e7 * c2, 0.1 * c2
             r[3].K = 1, 0.01
             r[5].K = 1e6 * c1, 0.2 * c1
 
