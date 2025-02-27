@@ -42,7 +42,7 @@ def initialize_mesh(mesh_path, scale, nucleus_volume, volume_system, extracellul
     return mesh, cell_tets
 
 
-def create_model(p, species_names, mesh_path):
+def create_model(p, species_names, mesh_path, plot_only_run):
     """
     Creates a STEPS simulation model based on parameters, species, and mesh geometry.
 
@@ -164,15 +164,16 @@ def create_model(p, species_names, mesh_path):
 
 
     # Define results
-    rs = stsave.ResultSelector(simulation)
-    result_selectors = {
-        "EGF_EGFR": rs.SUM(rs.TRIS(cell_tets.surface).EGF_EGFR.Count),
-        "EGF_EGFRp2": rs.SUM(rs.TRIS(cell_tets.surface).EGF_EGFRp2.Count),
-        "EGF_EGFRp2_GAP": rs.SUM(rs.TRIS(cell_tets.surface).EGF_EGFRp2_GAP.Count),
-    }
-
-    # Schedule saving
-    for key, sel in result_selectors.items():
-        simulation.toSave(sel, dt=p["time step"])
+    rs = None
+    if plot_only_run == False:
+        rs = stsave.ResultSelector(simulation)
+        result_selectors = {
+            "EGF_EGFR": rs.SUM(rs.TRIS(cell_tets.surface).EGF_EGFR.Count),
+            "EGF_EGFRp2": rs.SUM(rs.TRIS(cell_tets.surface).EGF_EGFRp2.Count),
+            "EGF_EGFRp2_GAP": rs.SUM(rs.TRIS(cell_tets.surface).EGF_EGFRp2_GAP.Count),
+        }
+        # Schedule saving
+        for key, sel in result_selectors.items():
+            simulation.toSave(sel, dt=p["time step"])
 
     return simulation, rs, mesh

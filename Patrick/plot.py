@@ -25,6 +25,7 @@ def traverse_datasets(hdf_file):
 
 traverse_datasets("/home/pb/steps_cell_signaling/Patrick/saved_objects/initial_run/parallel_run.h5.h5")
 #%%
+# hdf = stsave.HDF5Handler("/home/pb/steps_cell_signaling/Patrick/saved_objects/initial_run/parallel_run.h5")
 with stsave.HDF5Handler("/home/pb/steps_cell_signaling/Patrick/saved_objects/initial_run/parallel_run.h5") as hdf:
     A, B, C = hdf['parallel_run'].results
     names = ["A", "B", "C"]
@@ -35,7 +36,7 @@ with stsave.HDF5Handler("/home/pb/steps_cell_signaling/Patrick/saved_objects/ini
         time = []
         for r in range(len(res.time)):
             time.append(res.time[r])
-            plt.plot(res.time[r], 1e3 * res.data[r, :, 0], label=f'Compound No. {r}')
+            plt.plot(res.time[r], 1e3 * res.data[r, :, 0], label=f'Compound No. {idx}')
         plt.legend()
         plt.xlabel('Time [s]')
         plt.ylabel(names[idx])

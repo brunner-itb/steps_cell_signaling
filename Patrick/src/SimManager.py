@@ -66,10 +66,11 @@ class SimManager:
             os.makedirs(save_dir)  # Create it if it doesn't exist
 
 
-    def load_model(self, type):
+    def load_model(self, type, plot_only_run=False):
+        self.plot_only_run = plot_only_run
         if type == "small":
             from src.Model_small import create_model
-            self.simulation, self.result_selector, self.mesh = create_model(self.parameters, self.species_names, self.mesh_path)
+            self.simulation, self.result_selector, self.mesh = create_model(self.parameters, self.species_names, self.mesh_path, plot_only_run)
         elif type == "large":
             warnings.warn("The 'large' model type is not yet implemented", UserWarning)
         else:
@@ -83,18 +84,30 @@ class SimManager:
         Args:
             run_id (int): Identifier for the current simulation run.
         """
-        with stsave.HDF5Handler(self.save_file) as hdf:
-            self.simulation.toDB(hdf,self.runname, run_id=run_id)
+        if self.plot_only_run == False:
+            with stsave.HDF5Handler(self.save_file) as hdf:
+                self.simulation.toDB(hdf,self.runname, run_id=run_id)
+                self.simulation.newRun()
+                self.simulation.exo.EGF.Count = 4e4
+                self.simulation.cell_surface.EGFR.Count = 7.8e4
+                self.simulation.cyt.GAP.Count = 2.3e4
+                # self.simulation.cyt.X.Count = 4.1e4
+                # self.simulation.nuc_mem.Xa.DiffusionActive = True
+
+                start_time = time.time()
+                self.simulation.run(self.endtime)
+                end_time = time.time()
+
+                print(f"Run {run_id} completed in {end_time - start_time:.2f} seconds.")
+        else:
+            from src.InteractivePlotting import interactive_plots
+            # TODO: assert that non parallel run? Test it first
             self.simulation.newRun()
             self.simulation.exo.EGF.Count = 4e4
             self.simulation.cell_surface.EGFR.Count = 7.8e4
             self.simulation.cyt.GAP.Count = 2.3e4
-            # self.simulation.cyt.X.Count = 4.1e4
-            # self.simulation.nuc_mem.Xa.DiffusionActive = True
 
-            start_time = time.time()
-            self.simulation.run(self.endtime)
-            end_time = time.time()
-
-            print(f"Run {run_id} completed in {end_time - start_time:.2f} seconds.")
+            self.result_selector = stsave.ResultSelector(self.simulation)
+            SimControl = interactive_plots(self)
+            SimControl.run()
 
