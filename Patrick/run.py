@@ -21,11 +21,11 @@ no data saved, so be aware.
 sm = SimManager(parameters=p,
                 species_names=species_names,
                 mesh_path = "/home/pb/steps_cell_signaling/Patrick/meshes/elipsoid_4.5.inp",
-                save_file ="saved_objects/initial_run/parallel_run",
+                save_file = "saved_objects/initial_run/parallel_run",
                 parallel = True,
                 runname = "parallel_run")
 
 sm.load_model(type="small",
-              plot_only_run=True)
+              plot_only_run=False)
 
-sm.run(run_id=0)
+sm.run()

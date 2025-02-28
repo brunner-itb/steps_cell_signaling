@@ -120,11 +120,11 @@ class SimManager:
 
         if self.plot_only_run == False:
             with stsave.HDF5Handler(self.save_file) as hdf:
-                self.simulation.toDB(hdf,self.runname, run_id=run_id)
+                self.simulation.toDB(hdf, uid = self.runname)
                 self.simulation.newRun()
-                self.simulation.exo.EGF.Count = 4e4
-                self.simulation.cell_surface.EGFR.Count = 7.8e4
-                self.simulation.cyt.GAP.Count = 2.3e4
+                self.simulation.exo.EGF.Count = self.p["EGF_0"]
+                self.simulation.cell_surface.EGFR.Count = self.p["EGFR_0"]
+                self.simulation.cyt.GAP.Count = self.p["GAP_0"]
                 # self.simulation.cyt.X.Count = 4.1e4
                 # self.simulation.nuc_mem.Xa.DiffusionActive = True
 

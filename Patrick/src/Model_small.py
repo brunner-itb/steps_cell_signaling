@@ -50,7 +50,7 @@ def initialize_ellipsoid_mesh(mesh_path, scale, nucleus_volume, volume_system, e
 
         # LISTEN
 
-        # Exo
+        # Extracellular space
         exo_tets = stgeom.TetList(mesh.tetGroups["Volume1"])
 
         # Zelle
