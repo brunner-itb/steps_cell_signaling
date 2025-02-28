@@ -9,7 +9,7 @@ import numpy as np
 import os
 
 
-def initialize_mesh(mesh_path, scale, nucleus_volume, volume_system, extracellular_volume, cell_surface):
+def initialize_sphere_mesh(mesh_path, scale, nucleus_volume, volume_system, extracellular_volume, cell_surface):
     # Load mesh and compartments
     assert os.path.isfile(mesh_path), "mesh_path does not exist. Please check the path and try again."
     mesh = stgeom.TetMesh.LoadAbaqus(mesh_path, scale=scale)
@@ -38,6 +38,72 @@ def initialize_mesh(mesh_path, scale, nucleus_volume, volume_system, extracellul
         exo = stgeom.Compartment.Create(mesh.tetGroups["Volume3"], extracellular_volume)
         # Cell membrane
         cell_surface = stgeom.Patch.Create(cell_tets.surface, cyt, exo, cell_surface)
+
+    return mesh, cell_tets
+
+def initialize_ellipsoid_mesh(mesh_path, scale, nucleus_volume, volume_system, extracellular_volume, cell_surface):
+    # Load mesh and compartments
+    assert os.path.isfile(mesh_path), "mesh_path does not exist. Please check the path and try again."
+    mesh = stgeom.TetMesh.LoadAbaqus(mesh_path, scale=scale)
+
+    with mesh:
+
+        # LISTEN
+
+        # Exo
+        exo_tets = stgeom.TetList(mesh.tetGroups["Volume1"])
+
+        # Zelle
+        cell_tets = stgeom.TetList(mesh.tetGroups["Volume2"])
+
+        # Zellkern
+        nuc_tets = stgeom.TetList(mesh.tetGroups["Volume3"])
+
+        # TETS im Cyt, die an die Membran grenzen
+        mem_tris = cell_tets.surface
+        mem_tet = stgeom.TetList()
+        for tri in mem_tris:
+            for tet in tri.tetNeighbs:
+                mem_tet.append(tet)
+        mem_tet = stgeom.TetList([tet for tet in mem_tet if tet in cell_tets])
+
+        # Hälfte Cyto
+        half_cyt = stgeom.TetList(tet for tet in cell_tets if tet.center.y > 0)
+        # TRIS vom Durchschnitt
+        slice_cyt = stgeom.TriList(half_cyt.surface & (cell_tets - half_cyt).surface)
+        # die Tets am Querschnitt
+        slice_tet_cyt = stgeom.TetList()
+        triInds_cyt = []
+        for tri in slice_cyt:
+            for tet in tri.tetNeighbs:
+                slice_tet_cyt.append(tet)
+                triInds_cyt.append(tri.idx)
+
+        # Häfte Nuc
+        half_nuc = stgeom.TetList(tet for tet in nuc_tets if tet.center.y > 0)
+        # TRIS vom Durchscnitt
+        slice_nuc = stgeom.TriList(half_nuc.surface & (nuc_tets - half_nuc).surface)
+        # die Tets am Querschnitt
+        slice_tet_nuc = stgeom.TetList()
+        triInds_nuc = []
+        for tri in slice_nuc:
+            for tet in tri.tetNeighbs:
+                slice_tet_nuc.append(tet)
+                triInds_nuc.append(tri.idx)
+
+
+        # COMPARTMENTS
+        # Zellkern
+        nuc = stgeom.Compartment.Create(nuc_tets, nucleus_volume)
+
+        # Cytoplasma
+        cyt = stgeom.Compartment.Create(cell_tets, volume_system)
+
+        # Zelläüßeres
+        exo = stgeom.Compartment.Create(exo_tets, extracellular_volume)
+
+        # Zellmembran
+        cell_surface = stgeom.Patch.Create(cyt.surface & exo.surface, cyt, exo, cell_surface)
 
     return mesh, cell_tets
 
@@ -78,8 +144,6 @@ def create_model(p, species_names, mesh_path, plot_only_run):
       and membrane patch.
     - Sets up a stochastic simulation engine with result selectors for species counts.
     """
-    c1 = 1
-    c2 = 1
     mdl = stmodel.Model()
     r = stmodel.ReactionManager()
     species_dict = {}
@@ -100,7 +164,7 @@ def create_model(p, species_names, mesh_path, plot_only_run):
             stmodel.Diffusion(species_dict["EGF"], p["DC"])
 
         # Load mesh and compartments
-        mesh, cell_tets = initialize_mesh(mesh_path,
+        mesh, cell_tets = initialize_ellipsoid_mesh(mesh_path,
                                scale=10 ** -6,
                                nucleus_volume=nucleus_volume,
                                volume_system=volume_system,
@@ -115,10 +179,10 @@ def create_model(p, species_names, mesh_path, plot_only_run):
             species_dict["EGF_EGFRp2"].s + species_dict["GAP"].i < r[5] > species_dict["EGF_EGFRp2_GAP"].s
             # species_dict["EGF_EGFRp2_GAP"].s < r[0] > species_dict["EGF_EGFRp2_GAP"].s
             # r[0].K = p["k[0]"], 0.1
-            r[1].K = 3e7 * c1, 38e-4 * c1
-            r[2].K = 1e7 * c2, 0.1 * c2
+            r[1].K = 3e7, 38e-4
+            r[2].K = 1e7, 0.1
             r[3].K = 1, 0.01
-            r[5].K = 1e6 * c1, 0.2 * c1
+            r[5].K = 1e6, 0.2
 
             stmodel.Diffusion(species_dict["EGFR"], p["DC"])
             stmodel.Diffusion(species_dict["EGF_EGFR"], p["DC"])
@@ -126,44 +190,14 @@ def create_model(p, species_names, mesh_path, plot_only_run):
             stmodel.Diffusion(species_dict["EGF_EGFRp2"], p["DC"])
             stmodel.Diffusion(species_dict["EGF_EGFRp2_GAP"], p["DC"])
 
-    # # Load mesh and compartments
-    # assert os.path.isfile(mesh_path), "mesh_path does not exist. Please check the path and try again."
-    # mesh = stgeom.TetMesh.LoadAbaqus(mesh_path, scale=10 ** -6)
-    #
-    # with mesh:
-    #     # Zelle
-    #     cell_tets = stgeom.TetList(mesh.tetGroups["Volume2"])
-    #
-    #     # Zellkern
-    #     nuc_tets = stgeom.TetList(
-    #         (tet for tet in cell_tets if np.linalg.norm(tet.center) < 5e-6))
-    #
-    #     mem_tris = cell_tets.surface
-    #     mem_tet = stgeom.TetList()
-    #     for tri in mem_tris:
-    #         for tet in tri.tetNeighbs:
-    #             mem_tet.append(tet)
-    #     mem_tet = stgeom.TetList([tet for tet in mem_tet if tet in cell_tets])
-    #
-    #     # Create compartments
-    #     # nucleus
-    #     nuc = stgeom.Compartment.Create(nuc_tets, nucleus_volume)
-    #     # Cytoplasm
-    #     cyt = stgeom.Compartment.Create(cell_tets - nuc_tets, volume_system)
-    #     # Extracellular volume
-    #     exo = stgeom.Compartment.Create(mesh.tetGroups["Volume3"], extracellular_volume)
-    #     # Cell membrane
-    #     cell_surface = stgeom.Patch.Create(cell_tets.surface, cyt, exo, cell_surface)
-
 
     # Initialize RNG and Simulation
     rng = strng.RNG("mt19937", 512, 2903)
     partition = stgeom.LinearMeshPartition(mesh, 1, 1, stsim.MPI.nhosts)
     simulation = stsim.Simulation("TetOpSplit", mdl, mesh, rng, False, partition)
-   
 
 
-    # Define results
+    # Define which results to save and how they are processed
     rs = None
     if plot_only_run == False:
         rs = stsave.ResultSelector(simulation)

@@ -13,21 +13,35 @@ import time
 class SimManager:
     def __init__(self, parameters, species_names, mesh_path, save_file="saved_objects/initial_run/initial_run.h5", parallel=False, runname: str = "initial_run"):
         """
-        Manages the configuration, setup, and execution of biochemical simulations.
+         Manages the configuration, setup, and execution of biochemical simulations.
 
-        The `SimManager` class provides a high-level interface for initializing,
-        configuring, and running simulations based on user-defined parameters.
-        It is responsible for loading simulation models, setting up the required environment,
-        and executing the simulation runs while saving the results in an HDF5 file.
+         The `SimManager` class provides a high-level interface for initializing,
+         configuring, and running simulations based on user-defined parameters.
+         It is responsible for loading simulation models, setting up the required environment,
+         and executing the simulation runs while saving the results in an HDF5 file.
 
-        Attributes:
-            parameters (dict): Dictionary containing the simulation parameters like
-                               diffusion constants, reaction rates, etc.
-            species_names (list): List of molecular species names involved in the simulation.
-            endtime (int): Total simulation runtime, in seconds.
-            mesh_path (str): File path to the geometry mesh used in the simulation.
-            save_file (str): Path where simulation results will be stored.
-            simulation (object): The initialized simulation instance.
+         Args:
+             parameters (dict): Dictionary containing the simulation parameters like
+                                diffusion constants, reaction rates, etc.
+             species_names (list): List of molecular species names involved in the simulation.
+             mesh_path (str): File path to the geometry mesh used in the simulation.
+             save_file (str): Path where simulation results will be stored.
+             parallel (bool): Whether to run the simulation in parallel mode.
+             runname (str): Identifier for the simulation run.
+
+         Attributes:
+             parameters (dict): Dictionary containing the simulation parameters.
+             species_names (list): List of molecular species names.
+             endtime (int): Total simulation runtime, in seconds.
+             mesh_path (str): File path to the geometry mesh.
+             save_file (str): Path where simulation results will be stored.
+             simulation (object): The initialized simulation instance.
+             result_selector: Object for selecting and accessing simulation results.
+             mesh: The loaded mesh geometry.
+             cell_tets: Tetrahedral elements representing the cell.
+             nuc_tets: Tetrahedral elements representing the nucleus.
+             parallel (bool): Whether parallel mode is enabled.
+             runname (str): Identifier for the simulation run.
 
         Methods:
             __init__(parameters, species_names, endt, mesh_path, save_file):
@@ -67,6 +81,18 @@ class SimManager:
 
 
     def load_model(self, type, plot_only_run=False):
+        """
+        Load a simulation model based on the specified type.
+
+        Args:
+            type (str): Type of model to load, currently supports "small" with
+                       "large" planned for future implementation.
+            plot_only_run (bool): If True, sets up the simulation for interactive
+                                 plotting only, without saving data. Default is False.
+
+        Raises:
+            UserWarning: If the specified model type is not implemented.
+        """
         self.plot_only_run = plot_only_run
         if type == "small":
             from src.Model_small import create_model
@@ -79,11 +105,19 @@ class SimManager:
     def run(self, run_id=0):
         """
         Run the simulation with the initialized parameters.
-        Save to HDF.
+
+        This method either saves results to an HDF5 file or provides interactive
+        plotting during the simulation run, based on the plot_only_run setting.
 
         Args:
-            run_id (int): Identifier for the current simulation run.
+            run_id (int): Identifier for the current simulation run. Default is 0.
+
+        Notes:
+            - When plot_only_run is False, results are saved to the specified HDF5 file.
+            - When plot_only_run is True, an interactive plotting session is launched.
+            - Initial molecular counts are set for EGF, EGFR, and GAP species regardless of mode.
         """
+
         if self.plot_only_run == False:
             with stsave.HDF5Handler(self.save_file) as hdf:
                 self.simulation.toDB(hdf,self.runname, run_id=run_id)

@@ -18,18 +18,17 @@ def interactive_plots(sm):
         #                    y_range=[0, 15e-6],
         #                    y_label=('Concentration', 'M')
         #                    )
+
         # 3D displays
         EGF_d, cyt_d, full_d = stvis.SimDisplay.Create('EGF', 'cytosol', 'Full view')
-        # # Access the window/widget
-        # full_d._stepsSimDisplay.window/widget
 
         with EGF_d:
             # Static mesh element
-            stvis.ElementDisplay(sm.result_selector.exo, color=mpl_c.to_rgba("black", alpha=0.5))
+            # stvis.ElementDisplay(sm.result_selector.exo, color=mpl_c.to_rgba("grey", alpha=0.05))
             # Dynamic element
             stvis.ElementDisplay(sm.result_selector.exo.EGF, color=mpl_c.to_rgba("red", alpha=1), spec_size=0.01)
         with cyt_d:
-            stvis.ElementDisplay(sm.result_selector.cell_surface, color=mpl_c.to_rgba("black", alpha=0.5))
+            stvis.ElementDisplay(sm.result_selector.cell_surface, color=mpl_c.to_rgba("grey", alpha=0.05))
 
         full_d.merge(EGF_d, cyt_d)
     return sc
