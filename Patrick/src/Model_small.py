@@ -41,7 +41,7 @@ def initialize_sphere_mesh(mesh_path, scale, nucleus_volume, volume_system, extr
 
     return mesh, cell_tets
 
-def initialize_ellipsoid_mesh(mesh_path, scale, nucleus_volume, volume_system, extracellular_volume, cell_surface):
+def initialize_ellipsoid_mesh(mesh_path, scale, nucleus_volume, cytosol_volume, extracellular_volume, cell_surface):
     # Load mesh and compartments
     assert os.path.isfile(mesh_path), "mesh_path does not exist. Please check the path and try again."
     mesh = stgeom.TetMesh.LoadAbaqus(mesh_path, scale=scale)
@@ -97,13 +97,17 @@ def initialize_ellipsoid_mesh(mesh_path, scale, nucleus_volume, volume_system, e
         nuc = stgeom.Compartment.Create(nuc_tets, nucleus_volume)
 
         # Cytoplasma
-        cyt = stgeom.Compartment.Create(cell_tets, volume_system)
+        cyt = stgeom.Compartment.Create(cell_tets, cytosol_volume)
 
         # Zelläüßeres
         exo = stgeom.Compartment.Create(exo_tets, extracellular_volume)
 
         # Zellmembran
         cell_surface = stgeom.Patch.Create(cyt.surface & exo.surface, cyt, exo, cell_surface)
+
+        # DIFFUSIONS BARRIERE
+        # Zellkernmembran
+        nuc_mem = stgeom.DiffBoundary.Create(nuc.surface)
 
     return mesh, cell_tets
 
@@ -150,7 +154,7 @@ def create_model(p, species_names, mesh_path, plot_only_run):
 
     # Create volume and surface systems
     with mdl:
-        volume_system = stmodel.VolumeSystem.Create()
+        cytosol_volume = stmodel.VolumeSystem.Create()
         nucleus_volume = stmodel.VolumeSystem.Create()
         extracellular_volume = stmodel.VolumeSystem.Create()
         cell_surface = stmodel.SurfaceSystem.Create()
@@ -159,37 +163,55 @@ def create_model(p, species_names, mesh_path, plot_only_run):
         for sp_name in species_names:
             species_dict[sp_name] = stmodel.Species(name=sp_name)
 
+        # Cytoplasma/Cytosol
+        with cytosol_volume:
+            # ERK Deaktivierung
+            species_dict["ERKp"] + species_dict["P3"] > r[6] > species_dict["ERK"] + species_dict["P3"]
+            r[6].K = p["k[666]"]
+            #Cytoplasm diffusion
+            stmodel.Diffusion(species_dict["ERK"], p["DC"])
+            stmodel.Diffusion(species_dict["ERKp"], p["DC"])
+            stmodel.Diffusion(species_dict["P3"], p["DC"] * 2)
+            stmodel.Diffusion(species_dict["GAP"], p["DC"]/4)
+
         # Extracellular volume
         with extracellular_volume:
             stmodel.Diffusion(species_dict["EGF"], p["DC"])
 
-        # Load mesh and compartments
-        mesh, cell_tets = initialize_ellipsoid_mesh(mesh_path,
-                               scale=10 ** -6,
-                               nucleus_volume=nucleus_volume,
-                               volume_system=volume_system,
-                               extracellular_volume=extracellular_volume,
-                               cell_surface=cell_surface)
-        system_volume = mesh.Vol
+        # Nucleus volume
+        with nucleus_volume:
+            species_dict["ERKp"] > r[7] > species_dict["ERKpp"]
+            r[7].K = 1e8
+            stmodel.Diffusion(species_dict["ERKpp"], p["DC"])
+
         # Surface system (cell membrane)
         with cell_surface:
             species_dict["EGFR"].s + species_dict["EGF"].o < r[1] > species_dict["EGF_EGFR"].s
             species_dict["EGF_EGFR"].s + species_dict["EGF_EGFR"].s < r[2] > species_dict["EGF_EGFR2"].s
             species_dict["EGF_EGFR2"].s < r[3] > species_dict["EGF_EGFRp2"].s
-            species_dict["EGF_EGFRp2"].s + species_dict["GAP"].i < r[5] > species_dict["EGF_EGFRp2_GAP"].s
-            # species_dict["EGF_EGFRp2_GAP"].s < r[0] > species_dict["EGF_EGFRp2_GAP"].s
-            # r[0].K = p["k[0]"], 0.1
-            r[1].K = 3e7, 38e-4
-            r[2].K = 1e7, 0.1
-            r[3].K = 1, 0.01
-            r[5].K = 1e6, 0.2
+            species_dict["EGF_EGFRp2"].s + species_dict["GAP"].i < r[4] > species_dict["EGF_EGFRp2_GAP"].s
+            species_dict["EGF_EGFRp2_GAP"].s + species_dict["ERK"].i < r[5] > species_dict["EGF_EGFRp2_GAP"].s + species_dict["ERKp"].i
 
-            stmodel.Diffusion(species_dict["EGFR"], p["DC"])
-            stmodel.Diffusion(species_dict["EGF_EGFR"], p["DC"])
-            stmodel.Diffusion(species_dict["EGF_EGFR2"], p["DC"])
-            stmodel.Diffusion(species_dict["EGF_EGFRp2"], p["DC"])
-            stmodel.Diffusion(species_dict["EGF_EGFRp2_GAP"], p["DC"])
+            r[1].K = 3e7, 38e-4   # 1/Ms
+            r[2].K = 1e7 * 100, 0.1   # 1/Ms
+            r[3].K = 1 * 100, 0.01  # 1/s
+            r[4].K = 1e6 * 100 , 0.2   # 1/Ms 1e6, 0.2
+            r[5].K = p["k[0]"], 0.1 #1e8 * c1, 0.1 * c1
 
+            stmodel.Diffusion(species_dict["EGFR"], p["DC"]/10)
+            stmodel.Diffusion(species_dict["EGF_EGFR"], p["DC"]/20)
+            stmodel.Diffusion(species_dict["EGF_EGFR2"], p["DC"]/40)
+            stmodel.Diffusion(species_dict["EGF_EGFRp2"], p["DC"]/40)
+            stmodel.Diffusion(species_dict["EGF_EGFRp2_GAP"], p["DC"]/50)
+
+    # Load mesh and compartments
+    mesh, cell_tets = initialize_ellipsoid_mesh(mesh_path,
+                                                scale=10 ** -6,
+                                                nucleus_volume=nucleus_volume,
+                                                cytosol_volume=cytosol_volume,
+                                                extracellular_volume=extracellular_volume,
+                                                cell_surface=cell_surface)
+    system_volume = mesh.Vol
 
     # Initialize RNG and Simulation
     rng = strng.RNG("mt19937", 512, 2903)
@@ -203,8 +225,11 @@ def create_model(p, species_names, mesh_path, plot_only_run):
         rs = stsave.ResultSelector(simulation)
         result_selectors = {
             "EGF_EGFR": rs.SUM(rs.TRIS(cell_tets.surface).EGF_EGFR.Count),
+            "EGF_EGFR2": rs.SUM(rs.TRIS(cell_tets.surface).EGF_EGFR2.Count),
             "EGF_EGFRp2": rs.SUM(rs.TRIS(cell_tets.surface).EGF_EGFRp2.Count),
             "EGF_EGFRp2_GAP": rs.SUM(rs.TRIS(cell_tets.surface).EGF_EGFRp2_GAP.Count),
+            "ERKp": rs.SUM(rs.TRIS(cell_tets.surface).ERKp.Count),
+            "ERKpp": rs.SUM(rs.TRIS(cell_tets.surface).ERKpp.Count),
         }
         # Schedule saving
         for key, sel in result_selectors.items():

@@ -8,10 +8,12 @@ import warnings
 import numpy as np
 import os
 import time
+from mpi4py import MPI
 
 
 class SimManager:
-    def __init__(self, parameters, species_names, mesh_path, save_file="saved_objects/initial_run/initial_run.h5", parallel=False, runname: str = "initial_run"):
+    def __init__(self, parameters, species_names, mesh_path, save_file="saved_objects/initial_run/initial_run.h5",
+                 parallel=False, runname: str = "initial_run", replace: bool = False):
         """
          Manages the configuration, setup, and execution of biochemical simulations.
 
@@ -59,6 +61,7 @@ class SimManager:
         self.endtime = self.parameters["endtime"]
         self.mesh_path = mesh_path
         self.save_file = save_file
+        self.replace = replace
         self.simulation = None
         self.result_selector = None
         self.mesh = None
@@ -78,6 +81,12 @@ class SimManager:
 
         if not os.path.exists(save_dir):  # Check if the directory exists
             os.makedirs(save_dir)  # Create it if it doesn't exist
+
+        comm = MPI.COMM_WORLD
+        rank = comm.Get_rank()
+        if rank == 0: # makes sure that only one process does this
+            if os.path.isfile(os.getcwd() + "/" + self.save_file + ".h5") and self.replace:
+                os.remove((os.getcwd() + "/" + self.save_file + ".h5"))
 
 
     def load_model(self, type, plot_only_run=False):
@@ -117,16 +126,25 @@ class SimManager:
             - When plot_only_run is True, an interactive plotting session is launched.
             - Initial molecular counts are set for EGF, EGFR, and GAP species regardless of mode.
         """
+        # this is a regex way of finding out if a file with a certain fileformat already exists. Right now its hardcoded
+        # that we always use .h5. Would be nice to make it dynamic
+        # p = "../file.h5"
+        # fileformat = ["h5","csv"]
+        #
+        # import re
+        # m = re.match(fr".+\.(?:{'|'.join(fileformat)})$")
+        # if m is not None:
 
         if self.plot_only_run == False:
             with stsave.HDF5Handler(self.save_file) as hdf:
                 self.simulation.toDB(hdf, uid = self.runname)
                 self.simulation.newRun()
-                self.simulation.exo.EGF.Count = self.p["EGF_0"]
-                self.simulation.cell_surface.EGFR.Count = self.p["EGFR_0"]
-                self.simulation.cyt.GAP.Count = self.p["GAP_0"]
-                # self.simulation.cyt.X.Count = 4.1e4
-                # self.simulation.nuc_mem.Xa.DiffusionActive = True
+                self.simulation.exo.EGF.Count = self.parameters["EGF_0"]
+                self.simulation.cell_surface.EGFR.Count = self.parameters["EGFR_0"]
+                self.simulation.cyt.GAP.Count = self.parameters["GAP_0"]
+                self.simulation.cyt.ERK.Count = self.parameters["ERK_0"]
+                self.simulation.cyt.P3.Count = self.parameters["P3_0"]
+                self.simulation.nuc_mem.ERKp.DiffusionActive = True
 
                 start_time = time.time()
                 self.simulation.run(self.endtime)

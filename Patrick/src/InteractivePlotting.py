@@ -20,15 +20,18 @@ def interactive_plots(sm):
         #                    )
 
         # 3D displays
-        EGF_d, cyt_d, full_d = stvis.SimDisplay.Create('EGF', 'cytosol', 'Full view')
+        EGF_d, cyt_d, nuc_d, full_d = stvis.SimDisplay.Create('EGF', 'cytosol', "nucleus", 'Full view')
 
         with EGF_d:
             # Static mesh element
-            # stvis.ElementDisplay(sm.result_selector.exo, color=mpl_c.to_rgba("grey", alpha=0.05))
+            stvis.ElementDisplay(sm.result_selector.exo, color=mpl_c.to_rgba("grey", alpha=0.05))
             # Dynamic element
             stvis.ElementDisplay(sm.result_selector.exo.EGF, color=mpl_c.to_rgba("red", alpha=1), spec_size=0.01)
+        with nuc_d:
+            # Static mesh element
+            stvis.ElementDisplay(sm.result_selector.nuc, color=mpl_c.to_rgba("grey", alpha=0.05))
         with cyt_d:
             stvis.ElementDisplay(sm.result_selector.cell_surface, color=mpl_c.to_rgba("grey", alpha=0.05))
 
-        full_d.merge(EGF_d, cyt_d)
+        full_d.merge(EGF_d, cyt_d, nuc_d)
     return sc
