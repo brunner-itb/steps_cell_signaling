@@ -1,5 +1,5 @@
 p = {
-    "time step" : 0.25,
+    "time step" : 0.01,
     "endtime" : 5,
     "DC" : 4e-12,
     "k[0]" : 1e8,

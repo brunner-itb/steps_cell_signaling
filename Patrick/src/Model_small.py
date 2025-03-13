@@ -54,23 +54,23 @@ def initialize_ellipsoid_mesh(mesh_path, scale, nucleus_volume, cytosol_volume, 
         exo_tets = stgeom.TetList(mesh.tetGroups["Volume1"])
 
         # Zelle
-        cell_tets = stgeom.TetList(mesh.tetGroups["Volume2"])
+        cytosol_tets = stgeom.TetList(mesh.tetGroups["Volume2"])
 
         # Zellkern
         nuc_tets = stgeom.TetList(mesh.tetGroups["Volume3"])
 
         # TETS im Cyt, die an die Membran grenzen
-        mem_tris = cell_tets.surface
+        mem_tris = cytosol_tets.surface
         mem_tet = stgeom.TetList()
         for tri in mem_tris:
             for tet in tri.tetNeighbs:
                 mem_tet.append(tet)
-        mem_tet = stgeom.TetList([tet for tet in mem_tet if tet in cell_tets])
+        mem_tet = stgeom.TetList([tet for tet in mem_tet if tet in cytosol_tets])
 
         # Hälfte Cyto
-        half_cyt = stgeom.TetList(tet for tet in cell_tets if tet.center.y > 0)
+        half_cyt = stgeom.TetList(tet for tet in cytosol_tets if tet.center.y > 0)
         # TRIS vom Durchschnitt
-        slice_cyt = stgeom.TriList(half_cyt.surface & (cell_tets - half_cyt).surface)
+        slice_cyt = stgeom.TriList(half_cyt.surface & (cytosol_tets - half_cyt).surface)
         # die Tets am Querschnitt
         slice_tet_cyt = stgeom.TetList()
         triInds_cyt = []
@@ -97,7 +97,7 @@ def initialize_ellipsoid_mesh(mesh_path, scale, nucleus_volume, cytosol_volume, 
         nuc = stgeom.Compartment.Create(nuc_tets, nucleus_volume)
 
         # Cytoplasma
-        cyt = stgeom.Compartment.Create(cell_tets, cytosol_volume)
+        cyt = stgeom.Compartment.Create(cytosol_tets, cytosol_volume)
 
         # Zelläüßeres
         exo = stgeom.Compartment.Create(exo_tets, extracellular_volume)
@@ -109,7 +109,7 @@ def initialize_ellipsoid_mesh(mesh_path, scale, nucleus_volume, cytosol_volume, 
         # Zellkernmembran
         nuc_mem = stgeom.DiffBoundary.Create(nuc.surface)
 
-    return mesh, cell_tets
+    return mesh, exo_tets, cytosol_tets, nuc_tets
 
 
 def create_model(p, species_names, mesh_path, plot_only_run):
@@ -205,12 +205,12 @@ def create_model(p, species_names, mesh_path, plot_only_run):
             stmodel.Diffusion(species_dict["EGF_EGFRp2_GAP"], p["DC"]/50)
 
     # Load mesh and compartments
-    mesh, cell_tets = initialize_ellipsoid_mesh(mesh_path,
-                                                scale=10 ** -6,
-                                                nucleus_volume=nucleus_volume,
-                                                cytosol_volume=cytosol_volume,
-                                                extracellular_volume=extracellular_volume,
-                                                cell_surface=cell_surface)
+    mesh, exo_tets, cytosol_tets, nuc_tets = initialize_ellipsoid_mesh(mesh_path,
+                                                                    scale=10 ** -6,
+                                                                    nucleus_volume=nucleus_volume,
+                                                                    cytosol_volume=cytosol_volume,
+                                                                    extracellular_volume=extracellular_volume,
+                                                                    cell_surface=cell_surface)
     system_volume = mesh.Vol
 
     # Initialize RNG and Simulation
@@ -221,16 +221,20 @@ def create_model(p, species_names, mesh_path, plot_only_run):
 
 
     # Define which results to save and how they are processed
+    # Not all species are present in all the compartments, be aware of this.
     rs = None
     if plot_only_run == False:
         rs = stsave.ResultSelector(simulation)
         result_selectors = {
-            "EGF_EGFR": rs.SUM(rs.TRIS(cell_tets.surface).EGF_EGFR.Count),
-            "EGF_EGFR2": rs.SUM(rs.TRIS(cell_tets.surface).EGF_EGFR2.Count),
-            "EGF_EGFRp2": rs.SUM(rs.TRIS(cell_tets.surface).EGF_EGFRp2.Count),
-            "EGF_EGFRp2_GAP": rs.SUM(rs.TRIS(cell_tets.surface).EGF_EGFRp2_GAP.Count),
-            "ERKp": rs.SUM(rs.TETS(cell_tets).ERKp.Count),
-            "ERKpp": rs.SUM(rs.TETS(cell_tets).ERKpp.Count),
+            "EGF_EGFR": rs.SUM(rs.TRIS(cytosol_tets.surface).EGF_EGFR.Count),
+            "EGF_EGFR2": rs.SUM(rs.TRIS(cytosol_tets.surface).EGF_EGFR2.Count),
+            "EGF_EGFRp2": rs.SUM(rs.TRIS(cytosol_tets.surface).EGF_EGFRp2.Count),
+            "EGF_EGFRp2_GAP": rs.SUM(rs.TRIS(cytosol_tets.surface).EGF_EGFRp2_GAP.Count),
+            "ERK_cyto": rs.SUM(rs.TETS(cytosol_tets).ERK.Count),
+            "ERKp_cyto": rs.SUM(rs.TETS(cytosol_tets).ERKp.Count),
+            "ERKp_nuc": rs.SUM(rs.TETS(nuc_tets).ERKp.Count),
+            "ERKpp": rs.SUM(rs.TETS(nuc_tets).ERKpp.Count),
+            "ERKp_cyto_conc": rs.TETS(cytosol_tets).ERKp.Conc,
         }
         # Schedule saving
         for key, sel in result_selectors.items():

@@ -12,7 +12,7 @@ from mpi4py import MPI
 
 
 class SimManager:
-    def __init__(self, parameters, species_names, mesh_path, save_file="saved_objects/initial_run/initial_run.h5",
+    def __init__(self, parameters, species_names, mesh_path, save_path="saved_objects/initial_run/initial_run.h5",
                  parallel=False, runname: str = "initial_run", plot_only_run: bool = True, replace: bool = False):
         """
          Manages the configuration, setup, and execution of biochemical simulations.
@@ -27,7 +27,7 @@ class SimManager:
                                 diffusion constants, reaction rates, etc.
              species_names (list): List of molecular species names involved in the simulation.
              mesh_path (str): File path to the geometry mesh used in the simulation.
-             save_file (str): Path where simulation results will be stored.
+             save_path (str): Path where simulation results will be stored.
              parallel (bool): Whether to run the simulation in parallel mode.
              runname (str): Identifier for the simulation run.
              plot_only_run (bool): If True, sets up the simulation for interactive
@@ -39,7 +39,7 @@ class SimManager:
              species_names (list): List of molecular species names.
              endtime (int): Total simulation runtime, in seconds.
              mesh_path (str): File path to the geometry mesh.
-             save_file (str): Path where simulation results will be stored.
+             save_path (str): Path where simulation results will be stored.
              simulation (object): The initialized simulation instance.
              result_selector: Object for selecting and accessing simulation results.
              mesh: The loaded mesh geometry.
@@ -63,7 +63,7 @@ class SimManager:
         self.species_names = species_names
         self.endtime = self.parameters["endtime"]
         self.mesh_path = mesh_path
-        self.save_file = save_file
+        self.save_path = save_path
         self.plot_only_run = plot_only_run
         self.replace = replace
         self.simulation = None
@@ -74,14 +74,14 @@ class SimManager:
         self.parallel = parallel
         self.runname = runname
 
-        self._setup_environment()
+        self._setup_environment(self.save_path)
 
-    def _setup_environment(self):
+    def _setup_environment(self, path):
         """
         Set up directories and environment.
         """
 
-        save_dir = os.path.dirname(self.save_file)  # Get the parent directory of the save file
+        save_dir = os.path.dirname(path)  # Get the parent directory of the path
 
         if not os.path.exists(save_dir):  # Check if the directory exists
             os.makedirs(save_dir)  # Create it if it doesn't exist
@@ -89,8 +89,8 @@ class SimManager:
         comm = MPI.COMM_WORLD
         rank = comm.Get_rank()
         if rank == 0: # makes sure that only one process does this
-            if os.path.isfile(self.save_file + ".h5") and self.replace and self.plot_only_run:
-                os.remove((self.save_file + ".h5"))
+            if os.path.isfile(path + ".h5") and self.replace and not self.plot_only_run:
+                os.remove((path + ".h5"))
 
 
     def load_model(self, type):
@@ -112,7 +112,7 @@ class SimManager:
         else:
             warnings.warn(f"The '{type}' model type is not yet implemented", UserWarning)
 
-    def run(self, run_id=0):
+    def run(self, replicats):
         """
         Run the simulation with the initialized parameters.
 
@@ -120,7 +120,7 @@ class SimManager:
         plotting during the simulation run, based on the plot_only_run setting.
 
         Args:
-            run_id (int): Identifier for the current simulation run. Default is 0.
+            replicats (int): How many replicats of this sim to run. Default is 1.
 
         Notes:
             - When plot_only_run is False, results are saved to the specified HDF5 file.
@@ -137,22 +137,35 @@ class SimManager:
         # if m is not None:
 
         if self.plot_only_run == False:
-            options = dict(compression="gzip", compression_opts=5) # compress the output files to save space. Larger opts = more compression
-            with stsave.XDMFHandler(self.save_file, hdf5DatasetKwArgs=options) as hdf:
-                self.simulation.toDB(hdf, uid = self.runname)
-                self.simulation.newRun()
-                self.simulation.exo.EGF.Count = self.parameters["EGF_0"]
-                self.simulation.cell_surface.EGFR.Count = self.parameters["EGFR_0"]
-                self.simulation.cyt.GAP.Count = self.parameters["GAP_0"]
-                self.simulation.cyt.ERK.Count = self.parameters["ERK_0"]
-                self.simulation.cyt.P3.Count = self.parameters["P3_0"]
-                self.simulation.nuc_mem.ERKp.DiffusionActive = True
+            # if replicat_id:
+            #     replicat_save_path = self.save_path + f"/replicat_{replicat_id}/output"
+            #     self._setup_environment(replicat_save_path)
+            #     checked_save_path = replicat_save_path
+            # else:
+            checked_save_path = self.save_path
 
-                start_time = time.time()
-                self.simulation.run(self.endtime)
-                end_time = time.time()
+            sum_of_runtimes = 0
+            for i in range(replicats):
+                options = dict(compression="gzip", compression_opts=5) # compress the output files to save space. Larger opts = more compression
+                with stsave.XDMFHandler(checked_save_path, hdf5DatasetKwArgs=options) as hdf:
+                    self.simulation.toDB(hdf, uid = self.runname)
+                    self.simulation.newRun()
+                    self.simulation.exo.EGF.Count = self.parameters["EGF_0"]
+                    self.simulation.cell_surface.EGFR.Count = self.parameters["EGFR_0"]
+                    self.simulation.cyt.GAP.Count = self.parameters["GAP_0"]
+                    self.simulation.cyt.ERK.Count = self.parameters["ERK_0"]
+                    self.simulation.cyt.P3.Count = self.parameters["P3_0"]
 
-                print(f"Run {run_id} completed in {end_time - start_time:.2f} seconds.")
+                    self.simulation.nuc.ERKp.Count = self.parameters["EGF_0"]
+                    self.simulation.nuc_mem.ERKp.DiffusionActive = True
+
+                    start_time = time.time()
+                    self.simulation.run(self.endtime)
+                    end_time = time.time()
+
+                    print(f"Run completed in {end_time - start_time:.2f} seconds.")
+                    sum_of_runtimes += (end_time - start_time)
+            print(f"All runs completed in {sum_of_runtimes:.2f} seconds")
         else:
             comm = MPI.COMM_WORLD
             assert comm.Get_size() == 1, "A plot_only_run only works in serial due to limitations by STEPS. Rerun either without mpirun or with mpirun -n 1 ..."
