@@ -1,12 +1,7 @@
+import sys
 from src.SimManager import SimManager
 from parameters import p
-
-# List of molecular species involved in the simulation
-# species_names = ["EGF", "EGFR", "Xa", "XA", "EGF_EGFR", "EGF_EGFR2",
-#                  "EGF_EGFRp2", "EGF_EGFRp2_GAP", "GAP"]
-species_names = ["EGF", "EGFR", "EGF_EGFR", "EGF_EGFR2", "EGF_EGFRp2", "GAP", "EGF_EGFRp2_GAP", "ERK", "ERKp", "ERKpp",
-                 "P3"]
-
+from species import species_names
 
 """
 Initialize and run the simulation for cell signaling pathways.
@@ -21,15 +16,21 @@ save them. Setting "plot_only_run = True" adjusts it accordingly. But: when you 
 no data saved, so be aware.
 """
 
+# # Get the replicat_id from the command-line argument
+# if len(sys.argv) < 2:
+#     replicat_id = None
+# else:
+#     replicat_id = int(sys.argv[1])
+
 sm = SimManager(parameters=p,
                 species_names=species_names,
                 mesh_path = "/home/pb/steps_cell_signaling/Patrick/meshes/elipsoid_4.5.inp",
-                save_file = "/home/pb/steps_cell_signaling/Patrick/saved_objects/initial_run/parallel_run", #without the .h5 suffix, but full file path please
+                save_path ="/home/pb/steps_cell_signaling/Patrick/saved_objects/initial_run/parallel_run",  #without the .h5 suffix, but full file path please
                 parallel = True,
                 runname = "long_run",
                 plot_only_run = False,
-                replace = True) # whether an already existing file should be overwritten or not. Might throw an error of there is an already existing one and this is set to false.
+                replace = True) # whether an already existing file should be overwritten or not. Might throw an error if there is an already existing one and this is set to false.
 
 sm.load_model(type="small")
 
-sm.run()
+sm.run(replicats = 30)

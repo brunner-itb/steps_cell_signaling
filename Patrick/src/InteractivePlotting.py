@@ -40,7 +40,7 @@ def interactive_plots(sm):
 
             stvis.ElementDisplay(sm.result_selector.cyt.ERKp, color=mpl_c.to_rgba("#984ea3", alpha=1),
                                  spec_size=0.015)  # purple
-            stvis.ElementDisplay(sm.result_selector.nuc.ERKp, color=mpl_c.to_rgba("#ff7f00", alpha=1),
+            stvis.ElementDisplay(sm.result_selector.nuc.ERKpp, color=mpl_c.to_rgba("#ff7f00", alpha=1),
                                  spec_size=0.015)  # orange
 
         with GAP_EGF:

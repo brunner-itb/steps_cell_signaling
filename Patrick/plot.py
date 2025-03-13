@@ -48,7 +48,10 @@ with stsave.HDF5Handler("/home/pb/steps_cell_signaling/Patrick/saved_objects/ini
         time = res.time
         for r in range(len(res.time)):
             ax.plot(res.time[r], 1e3 * res.data[r, :, 0], label=species_name)
-        ax.set_xlabel('Time [s]')
+        if idx >= len(results) - n_cols:
+            ax.set_xlabel('Time [s]')
+        # else:
+        #     ax.set_xticklabels([])
         ax.set_ylabel(species_name)
         ax.legend()
 
