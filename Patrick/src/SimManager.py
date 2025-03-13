@@ -13,7 +13,7 @@ from mpi4py import MPI
 
 class SimManager:
     def __init__(self, parameters, species_names, mesh_path, save_file="saved_objects/initial_run/initial_run.h5",
-                 parallel=False, runname: str = "initial_run", replace: bool = False):
+                 parallel=False, runname: str = "initial_run", plot_only_run: bool = True, replace: bool = False):
         """
          Manages the configuration, setup, and execution of biochemical simulations.
 
@@ -30,6 +30,9 @@ class SimManager:
              save_file (str): Path where simulation results will be stored.
              parallel (bool): Whether to run the simulation in parallel mode.
              runname (str): Identifier for the simulation run.
+             plot_only_run (bool): If True, sets up the simulation for interactive
+                     plotting only, without saving data. Default is False.
+             replace (bool): If True, replaces existing simulation results with a new one.
 
          Attributes:
              parameters (dict): Dictionary containing the simulation parameters.
@@ -61,6 +64,7 @@ class SimManager:
         self.endtime = self.parameters["endtime"]
         self.mesh_path = mesh_path
         self.save_file = save_file
+        self.plot_only_run = plot_only_run
         self.replace = replace
         self.simulation = None
         self.result_selector = None
@@ -85,27 +89,24 @@ class SimManager:
         comm = MPI.COMM_WORLD
         rank = comm.Get_rank()
         if rank == 0: # makes sure that only one process does this
-            if os.path.isfile(os.getcwd() + "/" + self.save_file + ".h5") and self.replace:
-                os.remove((os.getcwd() + "/" + self.save_file + ".h5"))
+            if os.path.isfile(self.save_file + ".h5") and self.replace and self.plot_only_run:
+                os.remove((self.save_file + ".h5"))
 
 
-    def load_model(self, type, plot_only_run=False):
+    def load_model(self, type):
         """
         Load a simulation model based on the specified type.
 
         Args:
             type (str): Type of model to load, currently supports "small" with
                        "large" planned for future implementation.
-            plot_only_run (bool): If True, sets up the simulation for interactive
-                                 plotting only, without saving data. Default is False.
 
         Raises:
             UserWarning: If the specified model type is not implemented.
         """
-        self.plot_only_run = plot_only_run
         if type == "small":
             from src.Model_small import create_model
-            self.simulation, self.result_selector, self.mesh = create_model(self.parameters, self.species_names, self.mesh_path, plot_only_run)
+            self.simulation, self.result_selector, self.mesh = create_model(self.parameters, self.species_names, self.mesh_path, self.plot_only_run)
         elif type == "large":
             warnings.warn("The 'large' model type is not yet implemented", UserWarning)
         else:
@@ -136,7 +137,8 @@ class SimManager:
         # if m is not None:
 
         if self.plot_only_run == False:
-            with stsave.HDF5Handler(self.save_file) as hdf:
+            options = dict(compression="gzip", compression_opts=5) # compress the output files to save space. Larger opts = more compression
+            with stsave.XDMFHandler(self.save_file, hdf5DatasetKwArgs=options) as hdf:
                 self.simulation.toDB(hdf, uid = self.runname)
                 self.simulation.newRun()
                 self.simulation.exo.EGF.Count = self.parameters["EGF_0"]
@@ -152,12 +154,18 @@ class SimManager:
 
                 print(f"Run {run_id} completed in {end_time - start_time:.2f} seconds.")
         else:
+            comm = MPI.COMM_WORLD
+            assert comm.Get_size() == 1, "A plot_only_run only works in serial due to limitations by STEPS. Rerun either without mpirun or with mpirun -n 1 ..."
+
             from src.InteractivePlotting import interactive_plots
-            # TODO: assert that non parallel run? Test it first
             self.simulation.newRun()
-            self.simulation.exo.EGF.Count = 4e4
-            self.simulation.cell_surface.EGFR.Count = 7.8e4
-            self.simulation.cyt.GAP.Count = 2.3e4
+            self.simulation.exo.EGF.Count = self.parameters["EGF_0"]
+            self.simulation.cell_surface.EGFR.Count = self.parameters["EGFR_0"]
+            self.simulation.cyt.GAP.Count = self.parameters["GAP_0"]
+            self.simulation.cyt.ERK.Count = self.parameters["ERK_0"]
+            self.simulation.cyt.P3.Count = self.parameters["P3_0"]
+
+            self.simulation.nuc_mem.ERKp.DiffusionActive = True
 
             self.result_selector = stsave.ResultSelector(self.simulation)
             SimControl = interactive_plots(self)

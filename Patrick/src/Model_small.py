@@ -4,7 +4,7 @@ import steps.geom as stgeom
 import steps.rng as strng
 import steps.sim as stsim
 import steps.saving as stsave
-from src.Utilities import molar_to_molecules
+from src.Utilities import molar_to_molecules, nostdout
 import numpy as np
 import os
 
@@ -215,6 +215,7 @@ def create_model(p, species_names, mesh_path, plot_only_run):
 
     # Initialize RNG and Simulation
     rng = strng.RNG("mt19937", 512, 2903)
+    # with nostdout(): #doesnt work, crashes the freaking sim...
     partition = stgeom.LinearMeshPartition(mesh, 1, 1, stsim.MPI.nhosts)
     simulation = stsim.Simulation("TetOpSplit", mdl, mesh, rng, False, partition)
 
@@ -228,8 +229,8 @@ def create_model(p, species_names, mesh_path, plot_only_run):
             "EGF_EGFR2": rs.SUM(rs.TRIS(cell_tets.surface).EGF_EGFR2.Count),
             "EGF_EGFRp2": rs.SUM(rs.TRIS(cell_tets.surface).EGF_EGFRp2.Count),
             "EGF_EGFRp2_GAP": rs.SUM(rs.TRIS(cell_tets.surface).EGF_EGFRp2_GAP.Count),
-            "ERKp": rs.SUM(rs.TRIS(cell_tets.surface).ERKp.Count),
-            "ERKpp": rs.SUM(rs.TRIS(cell_tets.surface).ERKpp.Count),
+            "ERKp": rs.SUM(rs.TETS(cell_tets).ERKp.Count),
+            "ERKpp": rs.SUM(rs.TETS(cell_tets).ERKpp.Count),
         }
         # Schedule saving
         for key, sel in result_selectors.items():
