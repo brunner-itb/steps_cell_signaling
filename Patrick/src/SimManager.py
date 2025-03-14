@@ -14,7 +14,7 @@ from src.Utilities import set_inital_values
 
 
 class SimManager:
-    def __init__(self, parameters, species_names, mesh_path, save_path="saved_objects/initial_run/initial_run.h5",
+    def __init__(self, parameters, mesh_path, save_path="saved_objects/initial_run/initial_run.h5",
                  parallel=False, runname: str = "initial_run", plot_only_run: bool = True, replace: bool = False):
         """
          Manages the configuration, setup, and execution of biochemical simulations.
@@ -62,7 +62,8 @@ class SimManager:
         """
 
         self.parameters = parameters
-        self.species_names = species_names
+        self.species_names = None
+        self.model_dataframe = None
         self.endtime = self.parameters["endtime"]
         self.mesh_path = mesh_path
         self.save_path = save_path
@@ -77,6 +78,14 @@ class SimManager:
         self.runname = runname
 
         self._setup_environment(self.save_path)
+        self._load_model_dataframe()
+
+    def _load_model_dataframe(self):
+        from src.Utilities import dataframe_cleanup
+        df = pd.read_excel(self.parameters["big_model_mini_sph_df_path"])
+        df = dataframe_cleanup(df, ["Species"])
+        self.model_dataframe = df
+        self.species_names = df.Species.values
 
     def _setup_environment(self, path):
         """
@@ -111,7 +120,10 @@ class SimManager:
             self.simulation, self.result_selector, self.mesh = create_model(self.parameters, self.species_names, self.mesh_path, self.plot_only_run)
             # self.model_data = pd.read_excel("/home/pb/steps_cell_signaling/Patrick/data_small_model.xlsx")
         elif type == "large":
-            warnings.warn("The 'large' model type is not yet implemented", UserWarning)
+            from src.Model_expanded_mini_sph_new import create_model
+            # warnings.warn("The 'large' model type is not yet implemented", UserWarning)
+            self.simulation, self.result_selector, self.mesh = create_model(self.model_dataframe, self.parameters, self.species_names,
+                                                                            self.mesh_path, self.plot_only_run)
         else:
             warnings.warn(f"The '{type}' model type is not yet implemented", UserWarning)
 

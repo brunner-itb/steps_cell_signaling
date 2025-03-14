@@ -26,15 +26,15 @@ def initialize_mesh(mesh_path, scale, nucleus_volume, volume_system, extracellul
         #Exo /Extracellular volume
         exo_tets = stgeom.TetList(mesh.tetGroups["Volume1"])
         #Zelle /Cytoplasm
-        cell_tets = stgeom.TetList(mesh.tetGroups["Volume2"])
+        cytosol_tets = stgeom.TetList(mesh.tetGroups["Volume2"])
         #Zellkern
-        #nuc_tets = stgeom.TetList(mesh.tetGroups["Volume3"])
+        nuc_tets = stgeom.TetList(mesh.tetGroups["Volume3"])
 
     # Create compartments
         # Zellkern
         #nuc = stgeom.Compartment.Create(nuc_tets, vsys_nuc)
         # Cytoplasm
-        cyt = stgeom.Compartment.Create(cell_tets, volume_system)
+        cyt = stgeom.Compartment.Create(cytosol_tets, volume_system)
         # Extracellular volume
         exo = stgeom.Compartment.Create(exo_tets, extracellular_volume)
         # Cellmembrane
@@ -42,17 +42,17 @@ def initialize_mesh(mesh_path, scale, nucleus_volume, volume_system, extracellul
     #Create Diffusion Barrier 
         #Nucleus membrane
         #nuc_mem = stgeom.DiffBoundary.Create(nuc.surface)
-    return mesh, cell_tets, cyt, exo
+    return mesh, exo_tets, cytosol_tets, nuc_tets
 
 
-def create_model(p, p_name, factor, endt, ii,species_names, mesh_path, plot_only_run):
+def create_model(model_dataframe, p, species_names, mesh_path, plot_only_run):
 
     #Factors for Reaction Rates
     c1 = 1
     c2 = 1
     mdl =stmodel.Model()
     r = stmodel.ReactionManager()
-    data_big_model_mini_sph_df = pd.read_excel(p["big_model_mini_sph_df_path"])
+    data_big_model_mini_sph_df = model_dataframe
     species_dict = {}
 
     # Diffusionskonstanten
@@ -367,12 +367,12 @@ def create_model(p, p_name, factor, endt, ii,species_names, mesh_path, plot_only
 
    
     #-----------Load mesh and compartments
-    mesh, cell_tets = initialize_mesh(mesh_path,
-                               scale=10 ** -6,
-                               nucleus_volume=nucleus_volume,
-                               volume_system=volume_system,
-                               extracellular_volume=extracellular_volume,
-                               cell_surface=cell_surface)
+    mesh, exo_tets, cytosol_tets, nuc_tets = initialize_mesh(mesh_path,
+                                                               scale=10 ** -6,
+                                                               nucleus_volume=nucleus_volume,
+                                                               volume_system=volume_system,
+                                                               extracellular_volume=extracellular_volume,
+                                                               cell_surface=cell_surface)
     system_volume = mesh.Vol
 
     ratio_v = mesh.exo.Vol / 1286e-18
@@ -396,9 +396,9 @@ def create_model(p, p_name, factor, endt, ii,species_names, mesh_path, plot_only
             species_name = row['Species']
             result_selector = row['resultsselector']
             if result_selector == 'TRIS':
-                result_selectors.append((species_name, rs.TRIS(cell_surface.tris)))
+                result_selectors.append((species_name, rs.TRIS(cytosol_tets.surface)))
             elif result_selector == 'TETS':
-                result_selectors.append((species_name, rs.TETS(mesh.cyt.tets)))
+                result_selectors.append((species_name, rs.TETS(cytosol_tets)))
 
 
         '''species = [
@@ -467,7 +467,6 @@ def create_model(p, p_name, factor, endt, ii,species_names, mesh_path, plot_only
         for s,r in result_selectors:
 
             rs_path = rs.SUM(getattr(r, s).Count)
-            print(rs_path)
             sim.toSave(rs_path, dt = p["time step"]) #keep
         
         # i = ii#sys.argv[1] #get rid of
@@ -524,7 +523,7 @@ def create_model(p, p_name, factor, endt, ii,species_names, mesh_path, plot_only
         return sim, rs, mesh
 
 #standard parameterssqueue
-p = {"DC" : 4e-12, "time step" : 0.01, "EGF0": 1e4}
+# p = {"DC" : 4e-12, "time step" : 0.01, "EGF0": 1e4}
 
 #FOR PARAMETERS
 #factor = sys.argv[2]

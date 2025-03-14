@@ -1,7 +1,6 @@
 import sys
 from src.SimManager import SimManager
 from parameters import p
-from species import species_names
 
 """
 Initialize and run the simulation for cell signaling pathways.
@@ -23,7 +22,6 @@ no data saved, so be aware.
 #     replicat_id = int(sys.argv[1])
 
 sm = SimManager(parameters=p,
-                species_names=species_names,
                 mesh_path = "/home/pb/steps_cell_signaling/Patrick/meshes/elipsoid_4.5.inp",
                 save_path ="/home/pb/steps_cell_signaling/Patrick/saved_objects/testing/test",  #without the .h5 suffix, but full file path please
                 parallel = True,
@@ -31,6 +29,6 @@ sm = SimManager(parameters=p,
                 plot_only_run = False,
                 replace = True) # whether an already existing file should be overwritten or not. Might throw an error if there is an already existing one and this is set to false.
 
-sm.load_model(type="small")
+sm.load_model(type="large")
 
 sm.run(replicats = 1)
