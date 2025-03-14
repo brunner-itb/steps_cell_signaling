@@ -176,7 +176,7 @@ def create_model(p, species_names, mesh_path, plot_only_run):
 
         # Extracellular volume
         with extracellular_volume:
-            stmodel.Diffusion(species_dict["EGF"], p["DC"])
+            stmodel.Diffusion(species_dict["EGF"], p["DC"]/10)
 
         # Nucleus volume
         with nucleus_volume:

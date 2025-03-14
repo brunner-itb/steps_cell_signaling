@@ -25,12 +25,12 @@ no data saved, so be aware.
 sm = SimManager(parameters=p,
                 species_names=species_names,
                 mesh_path = "/home/pb/steps_cell_signaling/Patrick/meshes/elipsoid_4.5.inp",
-                save_path ="/home/pb/steps_cell_signaling/Patrick/saved_objects/initial_run/parallel_run",  #without the .h5 suffix, but full file path please
+                save_path ="/home/pb/steps_cell_signaling/Patrick/saved_objects/testing/test",  #without the .h5 suffix, but full file path please
                 parallel = True,
-                runname = "long_run",
+                runname = "testing",
                 plot_only_run = False,
                 replace = True) # whether an already existing file should be overwritten or not. Might throw an error if there is an already existing one and this is set to false.
 
 sm.load_model(type="small")
 
-sm.run(replicats = 30)
+sm.run(replicats = 1)

@@ -9,6 +9,8 @@ import numpy as np
 import os
 import time
 from mpi4py import MPI
+import pandas as pd
+from src.Utilities import set_inital_values
 
 
 class SimManager:
@@ -107,6 +109,7 @@ class SimManager:
         if type == "small":
             from src.Model_small import create_model
             self.simulation, self.result_selector, self.mesh = create_model(self.parameters, self.species_names, self.mesh_path, self.plot_only_run)
+            # self.model_data = pd.read_excel("/home/pb/steps_cell_signaling/Patrick/data_small_model.xlsx")
         elif type == "large":
             warnings.warn("The 'large' model type is not yet implemented", UserWarning)
         else:
@@ -150,13 +153,15 @@ class SimManager:
                 with stsave.XDMFHandler(checked_save_path, hdf5DatasetKwArgs=options) as hdf:
                     self.simulation.toDB(hdf, uid = self.runname)
                     self.simulation.newRun()
-                    self.simulation.exo.EGF.Count = self.parameters["EGF_0"]
-                    self.simulation.cell_surface.EGFR.Count = self.parameters["EGFR_0"]
-                    self.simulation.cyt.GAP.Count = self.parameters["GAP_0"]
-                    self.simulation.cyt.ERK.Count = self.parameters["ERK_0"]
-                    self.simulation.cyt.P3.Count = self.parameters["P3_0"]
 
-                    self.simulation.nuc.ERKp.Count = self.parameters["EGF_0"]
+                    set_inital_values(self, factor = 1)
+
+                    # self.simulation.exo.EGF.Count = self.parameters["EGF_0"]
+                    # self.simulation.cell_surface.EGFR.Count = self.parameters["EGFR_0"]
+                    # self.simulation.cyt.GAP.Count = self.parameters["GAP_0"]
+                    # self.simulation.cyt.ERK.Count = self.parameters["ERK_0"]
+                    # self.simulation.cyt.P3.Count = self.parameters["P3_0"]
+
                     self.simulation.nuc_mem.ERKp.DiffusionActive = True
 
                     start_time = time.time()
