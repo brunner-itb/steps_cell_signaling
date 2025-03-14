@@ -358,7 +358,7 @@ def create_model(p, p_name, factor, endt, ii,species_names, mesh_path):
     system_volume = mesh.Vol
 
     ratio_v = mesh.exo.Vol / 1286e-18
-    ratio_mini = mesh.cyt.Vol / 1766e-18
+    ratio_mini = mesh.cyt.Vol / 1766e-18 #added so all meshes have same volume
 
     # ----------Start Simulation Initilize RNG and Simulation
     seed = random.randint(1,6000)
