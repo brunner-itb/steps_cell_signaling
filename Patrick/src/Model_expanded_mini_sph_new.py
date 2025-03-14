@@ -10,6 +10,7 @@ import time
 import sys
 import random
 import numpy as np
+import pandas as pd
 
 def initialize_mesh(mesh_path, scale, nucleus_volume, volume_system, extracellular_volume, cell_surface):
     # Load mesh and compartments
@@ -44,13 +45,14 @@ def initialize_mesh(mesh_path, scale, nucleus_volume, volume_system, extracellul
     return mesh, cell_tets, cyt, exo
 
 
-def create_model(p, p_name, factor, endt, ii,species_names, mesh_path):
+def create_model(p, p_name, factor, endt, ii,species_names, mesh_path, plot_only_run):
 
     #Factors for Reaction Rates
     c1 = 1
     c2 = 1
     mdl =stmodel.Model()
     r = stmodel.ReactionManager()
+    data_big_model_mini_sph_df = pd.read_excel(p["big_model_mini_sph_df_path"])
     species_dict = {}
 
     # Diffusionskonstanten
@@ -163,7 +165,13 @@ def create_model(p, p_name, factor, endt, ii,species_names, mesh_path):
             r[59].K = 0.3   # 1/Ms
 
             #Cytoplasm diffusion
-            stmodel.Diffusion(species_dict["GAP"], p["DC"]/4)
+            for index, row in data_big_model_mini_sph_df.iterrows():
+                species_name = row['Species']
+                cyt_dc = row['cyt DC']
+                if pd.notna(cyt_dc):
+                    stmodel.Diffusion(species_dict[species_name], cyt_dc)
+
+            '''stmodel.Diffusion(species_dict["GAP"], p["DC"]/4)
             stmodel.Diffusion(species_dict["Grb2"], p["DC"]/4)
             stmodel.Diffusion(species_dict["Sos"], p["DC"]/4)
             stmodel.Diffusion(species_dict["Ras_GTP"], p["DC"]/4)
@@ -206,11 +214,16 @@ def create_model(p, p_name, factor, endt, ii,species_names, mesh_path):
             stmodel.Diffusion(species_dict["Rafp_P1"], p["DC"] / 8)
             stmodel.Diffusion(species_dict["Raf_Ras_GTP"], p["DC"] / 8)
             stmodel.Diffusion(species_dict["MEK_Rafp"], p["DC"] / 8)
-            stmodel.Diffusion(species_dict["MEKp_Rafp"], p["DC"] / 8)
+            stmodel.Diffusion(species_dict["MEKp_Rafp"], p["DC"] / 8)'''
 
 
         with extracellular_volume:
-            stmodel.Diffusion(species_dict["EGF"], p["DC"]/10)
+            for index, row in data_big_model_mini_sph_df.iterrows():
+                species_name = row['Species']
+                exo_dc = row['exo Volume DC']
+                if pd.notna(exo_dc):
+                    stmodel.Diffusion(species_dict[species_name], exo_dc)
+            #stmodel.Diffusion(species_dict["EGF"], p["DC"]/10)
 
         #with vsys_nuc: # means with nucles_volume:
 
@@ -282,8 +295,13 @@ def create_model(p, p_name, factor, endt, ii,species_names, mesh_path):
             species_dict["EGF_EGFRp2_GAP_Shcp"].s + species_dict["Grb2_Sos"].i < r[41] > species_dict["EGF_EGFRp2_GAP_Shcp_Grb2_Sos"].s
             r[41].K = 3e7 * fac , 0.0429  # 1/Ms
 
-
-            stmodel.Diffusion(species_dict["EGF"], p["DC"]/10)
+            # Cell surface diffusion
+            for index, row in data_big_model_mini_sph_df.iterrows():
+                species_name = row['Species']
+                cell_surface_dc = row['cell_surface DC']
+                if pd.notna(cell_surface_dc):
+                    stmodel.Diffusion(species_dict[species_name], cell_surface_dc)
+            '''stmodel.Diffusion(species_dict["EGF"], p["DC"]/10)
             stmodel.Diffusion(species_dict["EGF_EGFR"], p["DC"]/20)
             stmodel.Diffusion(species_dict["EGF_EGFR2"], p["DC"]/40)
             stmodel.Diffusion(species_dict["EGF_EGFRp2"], p["DC"]/40)
@@ -302,7 +320,7 @@ def create_model(p, p_name, factor, endt, ii,species_names, mesh_path):
             stmodel.Diffusion(species_dict["EGF_EGFRp2_GAP_Shcp_Grb2"], p["DC"] / 70)
             stmodel.Diffusion(species_dict["EGF_EGFRp2_GAP_Shcp_Grb2_Sos"], p["DC"] / 80)
             stmodel.Diffusion(species_dict["EGF_EGFRp2_GAP_Shcp_Grb2_Sos_Ras_GDP"], p["DC"] / 80)
-            stmodel.Diffusion(species_dict["EGF_EGFRp2_GAP_Shcp_Grb2_Sos_Ras_GTP"], p["DC"] / 80)
+            stmodel.Diffusion(species_dict["EGF_EGFRp2_GAP_Shcp_Grb2_Sos_Ras_GTP"], p["DC"] / 80)'''
     # -------Mesh--------------------------
     # if os.getcwd() != '/home/anna3171/annas-magnificent-steps-project':
 
@@ -367,130 +385,143 @@ def create_model(p, p_name, factor, endt, ii,species_names, mesh_path):
     sim = stsim.Simulation("TetOpSplit", mdl, mesh, rng, False, partition) #simulation
 
     # Define results
-    rs = stsave.ResultSelector(sim)
+    rs = None
+    if plot_only_run == False:
+        rs = stsave.ResultSelector(sim)
 
-# resultsselector
-    species = [
-        #TRIS
-        ("EGFR", rs.TRIS(cell_surface.tris)),
-        ("EGF_EGFR", rs.TRIS(cell_surface.tris)),
-        ("EGF_EGFR2", rs.TRIS(cell_surface.tris)),
-        ("EGF_EGFRp2", rs.TRIS(cell_surface.tris)),
-        ("EGF_EGFRp2_GAP", rs.TRIS(cell_surface.tris)),
-        ("EGF_EGFRp2_GAP_Grb2", rs.TRIS(cell_surface.tris)),
-        ("EGF_EGFRp2_GAP_Grb2_Sos", rs.TRIS(cell_surface.tris)),
-        ("EGF_EGFRp2_GAP_Grb2_Sos_Ras_GDP", rs.TRIS(cell_surface.tris)),
-        ("EGF_EGFRp2_GAP_Grb2_Sos_Ras_GTP", rs.TRIS(cell_surface.tris)),
-        ("EGF_EGFRp2_GAP_Shc", rs.TRIS(cell_surface.tris)),
-        ("EGF_EGFRp2_GAP_Shcp", rs.TRIS(cell_surface.tris)),
-        ("EGF_EGFRp2_GAP_Shcp_Grb2", rs.TRIS(cell_surface.tris)),
-        ("EGF_EGFRp2_GAP_Shcp_Grb2_Sos", rs.TRIS(cell_surface.tris)),
-        ("EGF_EGFRp2_GAP_Shcp_Grb2_Sos_Ras_GDP", rs.TRIS(cell_surface.tris)),
-        ("EGF_EGFRp2_GAP_Shcp_Grb2_Sos_Ras_GTP", rs.TRIS(cell_surface.tris)),
-        #TETS
-        ("EGF", rs.TETS(mesh.exo.tets)),
-        ("GAP", rs.TETS(mesh.cyt.tets)),
-        ("Shc", rs.TETS(mesh.cyt.tets)),
-        ("Grb2", rs.TETS(mesh.cyt.tets)),
-        ("Sos", rs.TETS(mesh.cyt.tets)),
-        ("Ras_GDP", rs.TETS(mesh.cyt.tets)),
-        ("Grb2_Sos", rs.TETS(mesh.cyt.tets)),
-        ("Shcp_Grb2_Sos", rs.TETS(mesh.cyt.tets)),
-        ("Shcp_Grb2", rs.TETS(mesh.cyt.tets)),
-        ("Shcp", rs.TETS(mesh.cyt.tets)),
-        ("Ras_GTP", rs.TETS(mesh.cyt.tets)),
-        ("Ras_GTPp", rs.TETS(mesh.cyt.tets)),
-        ("Raf", rs.TETS(mesh.cyt.tets)),
-        ("Raf_Ras_GTP", rs.TETS(mesh.cyt.tets)),
-        ("Rafp", rs.TETS(mesh.cyt.tets)),
-        ("P1", rs.TETS(mesh.cyt.tets)),
-        ("Rafp_P1", rs.TETS(mesh.cyt.tets)),
-        ("MEK", rs.TETS(mesh.cyt.tets)),
-        ("MEK_Rafp", rs.TETS(mesh.cyt.tets)),
-        ("MEKp_Rafp", rs.TETS(mesh.cyt.tets)),
-        ("MEKp", rs.TETS(mesh.cyt.tets)),
-        ("MEKpp", rs.TETS(mesh.cyt.tets)),
-        ("P2", rs.TETS(mesh.cyt.tets)),
-        ("MEKpp_P2", rs.TETS(mesh.cyt.tets)),
-        ("MEKp_P2", rs.TETS(mesh.cyt.tets)),
-        ("ERK", rs.TETS(mesh.cyt.tets)),
-        ("ERK_MEKpp", rs.TETS(mesh.cyt.tets)),
-        ("ERKp", rs.TETS(mesh.cyt.tets)),
-        ("ERKp_MEKpp", rs.TETS(mesh.cyt.tets)),
-        ("ERKpp", rs.TETS(mesh.cyt.tets)),
-        ("ERKpp_P3", rs.TETS(mesh.cyt.tets)),
-        ("P3", rs.TETS(mesh.cyt.tets)),
-        ("ERKp_P3", rs.TETS(mesh.cyt.tets)),
-        ("Prot", rs.TETS(mesh.cyt.tets)),
-        ("Proti", rs.TETS(mesh.cyt.tets)),
-        ("EGF_EGFRp2_GAP_Grb2i", rs.TETS(mesh.cyt.tets)),
-        ("EGF_EGFRp2_GAP_Grb2_Prot", rs.TETS(mesh.cyt.tets)),
-        ("EGFRi", rs.TETS(mesh.cyt.tets)),
-        ("EGFi", rs.TETS(mesh.cyt.tets)),
-        ("EGF_EGFRi", rs.TETS(mesh.cyt.tets)),
-        ("EGF_EGFR2i", rs.TETS(mesh.cyt.tets)),
-        ("EGF_EGFRp2i", rs.TETS(mesh.cyt.tets)),
-        ("EGF_EGFRp2_GAPi", rs.TETS(mesh.cyt.tets))
-    ]
+    # resultsselector
+        result_selectors = []
 
-    # needs adjustment
-    for s,r in species:
-
-        rs_path = rs.SUM(getattr(r, s).Count)
-        print(rs_path)
-        sim.toSave(rs_path, dt = p["time step"]) #keep
-        i = ii#sys.argv[1] #get rid of
-        rs_path.toFile(f"saved objects/Einzelne Runs/{s}_mini_sph_{p_name}_{factor}_{i}.dat") #get rid of
+        for index, row in data_big_model_mini_sph_df.iterrows():
+            species_name = row['Species']
+            result_selector = row['resultsselector']
+            if result_selector == 'TRIS':
+                result_selectors.append((species_name, rs.TRIS(cell_surface.tris)))
+            elif result_selector == 'TETS':
+                result_selectors.append((species_name, rs.TETS(mesh.cyt.tets)))
 
 
-    time_interval = np.arange(0,endt, 1)
-    time_interval = np.delete(time_interval, 0)
+        '''species = [
+            #TRIS
+            ("EGFR", rs.TRIS(cell_surface.tris)),
+            ("EGF_EGFR", rs.TRIS(cell_surface.tris)),
+            ("EGF_EGFR2", rs.TRIS(cell_surface.tris)),
+            ("EGF_EGFRp2", rs.TRIS(cell_surface.tris)),
+            ("EGF_EGFRp2_GAP", rs.TRIS(cell_surface.tris)),
+            ("EGF_EGFRp2_GAP_Grb2", rs.TRIS(cell_surface.tris)),
+            ("EGF_EGFRp2_GAP_Grb2_Sos", rs.TRIS(cell_surface.tris)),
+            ("EGF_EGFRp2_GAP_Grb2_Sos_Ras_GDP", rs.TRIS(cell_surface.tris)),
+            ("EGF_EGFRp2_GAP_Grb2_Sos_Ras_GTP", rs.TRIS(cell_surface.tris)),
+            ("EGF_EGFRp2_GAP_Shc", rs.TRIS(cell_surface.tris)),
+            ("EGF_EGFRp2_GAP_Shcp", rs.TRIS(cell_surface.tris)),
+            ("EGF_EGFRp2_GAP_Shcp_Grb2", rs.TRIS(cell_surface.tris)),
+            ("EGF_EGFRp2_GAP_Shcp_Grb2_Sos", rs.TRIS(cell_surface.tris)),
+            ("EGF_EGFRp2_GAP_Shcp_Grb2_Sos_Ras_GDP", rs.TRIS(cell_surface.tris)),
+            ("EGF_EGFRp2_GAP_Shcp_Grb2_Sos_Ras_GTP", rs.TRIS(cell_surface.tris)),
+            #TETS
+            ("EGF", rs.TETS(mesh.exo.tets)),
+            ("GAP", rs.TETS(mesh.cyt.tets)),
+            ("Shc", rs.TETS(mesh.cyt.tets)),
+            ("Grb2", rs.TETS(mesh.cyt.tets)),
+            ("Sos", rs.TETS(mesh.cyt.tets)),
+            ("Ras_GDP", rs.TETS(mesh.cyt.tets)),
+            ("Grb2_Sos", rs.TETS(mesh.cyt.tets)),
+            ("Shcp_Grb2_Sos", rs.TETS(mesh.cyt.tets)),
+            ("Shcp_Grb2", rs.TETS(mesh.cyt.tets)),
+            ("Shcp", rs.TETS(mesh.cyt.tets)),
+            ("Ras_GTP", rs.TETS(mesh.cyt.tets)),
+            ("Ras_GTPp", rs.TETS(mesh.cyt.tets)),
+            ("Raf", rs.TETS(mesh.cyt.tets)),
+            ("Raf_Ras_GTP", rs.TETS(mesh.cyt.tets)),
+            ("Rafp", rs.TETS(mesh.cyt.tets)),
+            ("P1", rs.TETS(mesh.cyt.tets)),
+            ("Rafp_P1", rs.TETS(mesh.cyt.tets)),
+            ("MEK", rs.TETS(mesh.cyt.tets)),
+            ("MEK_Rafp", rs.TETS(mesh.cyt.tets)),
+            ("MEKp_Rafp", rs.TETS(mesh.cyt.tets)),
+            ("MEKp", rs.TETS(mesh.cyt.tets)),
+            ("MEKpp", rs.TETS(mesh.cyt.tets)),
+            ("P2", rs.TETS(mesh.cyt.tets)),
+            ("MEKpp_P2", rs.TETS(mesh.cyt.tets)),
+            ("MEKp_P2", rs.TETS(mesh.cyt.tets)),
+            ("ERK", rs.TETS(mesh.cyt.tets)),
+            ("ERK_MEKpp", rs.TETS(mesh.cyt.tets)),
+            ("ERKp", rs.TETS(mesh.cyt.tets)),
+            ("ERKp_MEKpp", rs.TETS(mesh.cyt.tets)),
+            ("ERKpp", rs.TETS(mesh.cyt.tets)),
+            ("ERKpp_P3", rs.TETS(mesh.cyt.tets)),
+            ("P3", rs.TETS(mesh.cyt.tets)),
+            ("ERKp_P3", rs.TETS(mesh.cyt.tets)),
+            ("Prot", rs.TETS(mesh.cyt.tets)),
+            ("Proti", rs.TETS(mesh.cyt.tets)),
+            ("EGF_EGFRp2_GAP_Grb2i", rs.TETS(mesh.cyt.tets)),
+            ("EGF_EGFRp2_GAP_Grb2_Prot", rs.TETS(mesh.cyt.tets)),
+            ("EGFRi", rs.TETS(mesh.cyt.tets)),
+            ("EGFi", rs.TETS(mesh.cyt.tets)),
+            ("EGF_EGFRi", rs.TETS(mesh.cyt.tets)),
+            ("EGF_EGFR2i", rs.TETS(mesh.cyt.tets)),
+            ("EGF_EGFRp2i", rs.TETS(mesh.cyt.tets)),
+            ("EGF_EGFRp2_GAPi", rs.TETS(mesh.cyt.tets))
+        ]'''
 
-    for r in range(1):
-        # ToDo: pack initial rates also in Dataframe
+        for s,r in result_selectors:
 
-        sim.newRun()
-        sim.exo.EGF.Count = p["EGF0"] * ratio_mini
-        #sim.TETS(tips_one).EGF.Count = p["EGF0"]/len(tips_one)
-        print("EGF in exo: " + str(sim.exo.EGF.Count))
-        sim.cell_surface.EGFR.Count = 5e4 * ratio_mini  #5e4
-        print("EGFR on membrane: " + str(sim.cell_surface.EGFR.Count))
-        sim.cyt.GAP.Count = 1.2e4 * ratio_mini #1.2e4
-        print("GAP in cytoplasm: " + str(sim.cyt.GAP.Count))
-        sim.cyt.Grb2.Count = 5.10e4 * ratio_mini #5.10e4
-        print("Grb2 in cyt: " + str(sim.cyt.Grb2.Count))
-        sim.cyt.Sos.Count = 6.63e4 * ratio_mini #6.63e4
-        print("Sos in cyt: " + str(sim.cyt.Sos.Count))
-        sim.cyt.Ras_GDP.Count = 1.14e7 * ratio_mini #1.14e7
-        print("Ras_GDP in cyt: " + str(sim.cyt.Ras_GDP.Count))
-        sim.cyt.Raf.Count = 4e4 * ratio_mini
-        print("Raf in cyt: " + str(sim.cyt.Raf.Count))
-        sim.cyt.Shc.Count = 1.01e6 * ratio_mini #1.01e6
-        print("Shc in cyt: " + str(sim.cyt.Shc.Count))
-        sim.cyt.MEK.Count = 2.20e7 * ratio_mini #2.20e7
-        print("MEK in cyt: " + str(sim.cyt.MEK.Count))
-        sim.cyt.ERK.Count = 2.10e7 * ratio_mini #2.10e7
-        print("ERK in cyt: " + str(sim.cyt.ERK.Count))
-        sim.cyt.P1.Count = 4e4 * ratio_mini #4e4
-        print("P1 in cyt: " + str(sim.cyt.P1.Count))
-        sim.cyt.P2.Count = 4e4 * ratio_mini #4e4
-        print("P2 in cyt: " + str(sim.cyt.P2.Count))
-        sim.cyt.P3.Count = 1e7 * ratio_mini #1e7
-        print("P3 in cyt: " + str(sim.cyt.P3.Count))
-        sim.cyt.Prot.Count = 8.10e4 * ratio_mini
-        print("Prot in cyt: " + str(sim.cyt.Prot.Count))
+            rs_path = rs.SUM(getattr(r, s).Count)
+            print(rs_path)
+            sim.toSave(rs_path, dt = p["time step"]) #keep
+        
+        # i = ii#sys.argv[1] #get rid of
+            #rs_path.toFile(f"saved objects/Einzelne Runs/{s}_mini_sph_{p_name}_{factor}_{i}.dat") #get rid of
 
-# everything from here into run file
-        start = time.time()
-        for t in time_interval:
-            sim.run(t)
-            print(f"simulated for {t}s")
-            end_i = time.time()
-            print("It took: " + str((end_i - start) / 60 / 60) + "h")
-        end = time.time()
-        print("Durchlaufzeit: " + str((end - start)/60/60) + "h")
+        
+        '''time_interval = np.arange(0,endt, 1)
+        time_interval = np.delete(time_interval, 0)
 
-    return
+        for r in range(1):
+            # ToDo: pack initial rates also in Dataframe
+
+            sim.newRun()
+            sim.exo.EGF.Count = p["EGF0"] * ratio_mini
+            #sim.TETS(tips_one).EGF.Count = p["EGF0"]/len(tips_one)
+            print("EGF in exo: " + str(sim.exo.EGF.Count))
+            sim.cell_surface.EGFR.Count = 5e4 * ratio_mini  #5e4
+            print("EGFR on membrane: " + str(sim.cell_surface.EGFR.Count))
+            sim.cyt.GAP.Count = 1.2e4 * ratio_mini #1.2e4
+            print("GAP in cytoplasm: " + str(sim.cyt.GAP.Count))
+            sim.cyt.Grb2.Count = 5.10e4 * ratio_mini #5.10e4
+            print("Grb2 in cyt: " + str(sim.cyt.Grb2.Count))
+            sim.cyt.Sos.Count = 6.63e4 * ratio_mini #6.63e4
+            print("Sos in cyt: " + str(sim.cyt.Sos.Count))
+            sim.cyt.Ras_GDP.Count = 1.14e7 * ratio_mini #1.14e7
+            print("Ras_GDP in cyt: " + str(sim.cyt.Ras_GDP.Count))
+            sim.cyt.Raf.Count = 4e4 * ratio_mini
+            print("Raf in cyt: " + str(sim.cyt.Raf.Count))
+            sim.cyt.Shc.Count = 1.01e6 * ratio_mini #1.01e6
+            print("Shc in cyt: " + str(sim.cyt.Shc.Count))
+            sim.cyt.MEK.Count = 2.20e7 * ratio_mini #2.20e7
+            print("MEK in cyt: " + str(sim.cyt.MEK.Count))
+            sim.cyt.ERK.Count = 2.10e7 * ratio_mini #2.10e7
+            print("ERK in cyt: " + str(sim.cyt.ERK.Count))
+            sim.cyt.P1.Count = 4e4 * ratio_mini #4e4
+            print("P1 in cyt: " + str(sim.cyt.P1.Count))
+            sim.cyt.P2.Count = 4e4 * ratio_mini #4e4
+            print("P2 in cyt: " + str(sim.cyt.P2.Count))
+            sim.cyt.P3.Count = 1e7 * ratio_mini #1e7
+            print("P3 in cyt: " + str(sim.cyt.P3.Count))
+            sim.cyt.Prot.Count = 8.10e4 * ratio_mini
+            print("Prot in cyt: " + str(sim.cyt.Prot.Count))
+
+    # everything from here into run file
+            start = time.time()
+            for t in time_interval:
+                sim.run(t)
+                print(f"simulated for {t}s")
+                end_i = time.time()
+                print("It took: " + str((end_i - start) / 60 / 60) + "h")
+            end = time.time()
+            print("Durchlaufzeit: " + str((end - start)/60/60) + "h")'''
+
+        return sim, rs, mesh
 
 #standard parameterssqueue
 p = {"DC" : 4e-12, "time step" : 0.01, "EGF0": 1e4}
@@ -508,8 +539,8 @@ p = {"DC" : 4e-12, "time step" : 0.01, "EGF0": 1e4}
 #create_model(p | {parameter: value}, parameter, factor, endt)
 
 #FOR NORMALcrea
-parameter = "expanded"
-endt = 30
-i = 10
-print(f"Simulation {i}")
-create_model(p, parameter, 1, endt, i)
+#parameter = "expanded"
+#endt = 30
+#i = 10
+#print(f"Simulation {i}")
+#create_model(p, parameter, 1, endt, i)'''
