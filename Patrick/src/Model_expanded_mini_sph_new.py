@@ -465,7 +465,7 @@ def create_model(model_dataframe, p, species_names, mesh_path, plot_only_run):
         ]'''
 
         for s,r in result_selectors:
-
+            print(f"Setting result selector {s}/{len(result_selectors)}")
             rs_path = rs.SUM(getattr(r, s).Count)
             sim.toSave(rs_path, dt = p["time step"]) #keep
         

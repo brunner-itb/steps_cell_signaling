@@ -166,7 +166,7 @@ class SimManager:
                     self.simulation.toDB(hdf, uid = self.runname)
                     self.simulation.newRun()
 
-                    set_inital_values(self, factor = 1)
+                    set_inital_values(self, factor = 1) # TODO: MAYBE DONT HARDCODE BRO
 
                     # self.simulation.exo.EGF.Count = self.parameters["EGF_0"]
                     # self.simulation.cell_surface.EGFR.Count = self.parameters["EGFR_0"]
@@ -174,7 +174,7 @@ class SimManager:
                     # self.simulation.cyt.ERK.Count = self.parameters["ERK_0"]
                     # self.simulation.cyt.P3.Count = self.parameters["P3_0"]
 
-                    self.simulation.nuc_mem.ERKp.DiffusionActive = True
+                    # self.simulation.nuc_mem.ERKp.DiffusionActive = True
 
                     start_time = time.time()
                     self.simulation.run(self.endtime)
