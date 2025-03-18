@@ -23,9 +23,9 @@ no data saved, so be aware.
 
 sm = SimManager(parameters=p,
                 mesh_path = "/home/pb/steps_cell_signaling/Patrick/meshes/elipsoid_4.5.inp",
-                save_path ="/home/pb/steps_cell_signaling/Patrick/saved_objects/testing/test",  #without the .h5 suffix, but full file path please
+                save_path ="/home/pb/steps_cell_signaling/Patrick/saved_objects/full_run/large_model",  #without the .h5 suffix, but full file path please
                 parallel = True,
-                runname = "testing",
+                runname = "full_run",
                 plot_only_run = False,
                 replace = True) # whether an already existing file should be overwritten or not. Might throw an error if there is an already existing one and this is set to false.
 

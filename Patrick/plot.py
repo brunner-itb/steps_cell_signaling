@@ -29,10 +29,10 @@ def traverse_datasets(hdf_file):
 traverse_datasets("/home/pb/steps_cell_signaling/Patrick/saved_objects/initial_run/parallel_run.h5")
 #%%
 # hdf = stsave.HDF5Handler("/home/pb/steps_cell_signaling/Patrick/saved_objects/initial_run/parallel_run_1")
-hdf = stsave.HDF5Handler("/home/pb/steps_cell_signaling/Patrick/saved_objects/testing/test")
+hdf = stsave.HDF5Handler("/home/pb/steps_cell_signaling/Patrick/saved_objects/full_run/large_model")
 # with stsave.HDF5Handler("/home/pb/steps_cell_signaling/Patrick/saved_objects/initial_run/parallel_run_1") as hdf:
 # results = hdf["long_run"].results
-results = hdf["testing"].results
+results = hdf["full_run"].results
 
 # extract the species names for the result_selector label via regex
 full_labels = [x.labels for x in results]
@@ -50,7 +50,7 @@ for idx, (res, species_name) in enumerate(zip(results, species_names)):
     mean_data = np.mean(res.data[:,:,0], axis=0)
     std_data = np.std(res.data[:,:,0], axis=0)
     ax = axes[idx]
-    ax.plot(res.time[0], mean_data, label='Mean')
+    ax.scatter(res.time[0], mean_data, label='Mean', s = 0.5)
     ax.fill_between(res.time[0], mean_data - std_data, mean_data + std_data, alpha=0.3, label='std')
 
     if idx >= len(results) - n_cols:
@@ -58,7 +58,7 @@ for idx, (res, species_name) in enumerate(zip(results, species_names)):
     # else:
     #     ax.set_xticklabels([])
     ax.set_ylabel(species_name)
-    ax.legend()
+    # ax.legend()
 
 # Hide any unused subplots
 for i in range(idx + 1, len(axes)):
