@@ -235,6 +235,9 @@ def create_model(p, species_names, mesh_path, plot_only_run):
             "ERKp_nuc": rs.SUM(rs.TETS(nuc_tets).ERKp.Count),
             "ERKpp": rs.SUM(rs.TETS(nuc_tets).ERKpp.Count),
             "ERKp_cyto_conc": rs.TETS(cytosol_tets).ERKp.Conc,
+            "Concentrations": rs.TETS().LIST(species_dict["EGF_EGFR"],
+                                             species_dict["ERK"],
+                                             species_dict["ERKpp"]).Conc,
         }
         # Schedule saving
         for key, sel in result_selectors.items():

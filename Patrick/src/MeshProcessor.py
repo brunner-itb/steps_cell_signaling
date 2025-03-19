@@ -97,10 +97,41 @@ def create_ellipsoid_surface(center_x, center_y, center_z, r_a, r_b, r_c, mesh_s
     return sl1
 
 
-def extrude_cytosol_include_nucleus(input_file, output_file, height):
+def generate_ellipsoid_radii(ellipsoidity, volume=1):
+    """
+    Generate an ellipsoid, increasing ellipsoidity transitions from a sphere ( = 0) to an ellipsoid ( > 0)
+    while maintaining a specified constant volume.
+
+    Parameters:
+    ellipsoidity : float
+        Controls how elongated the ellipsoid becomes (higher values mean more elongation).
+    volume : float, optional
+        The desired volume of the ellipsoid (default is 1).
+
+    Returns:
+    List of tuples (r_a, r_b, r_c) representing ellipsoid radii.
+    """
+
+    # Initial radius for a sphere with given volume
+    r_0 = (3 * volume / (4 * np.pi)) ** (1 / 3)
+
+    factor = 1 + ellipsoidity
+
+    # Define radii while keeping volume constant
+    r_a = r_0 * factor
+    r_b = r_0 / np.sqrt(factor)
+    r_c = r_0 / np.sqrt(factor)
+
+    computed_volume = (4 / 3) * np.pi * r_a * r_b * r_c
+    # Ensure volume remains constant
+    # assert np.isclose(computed_volume, volume, atol=1e-6), "Volume constraint violated!"
+    return r_a, r_b, r_c
+
+
+def extrude_exo_from_cytosole_create_3D_mesh(input_file, output_file, height):
 
     """
-    Extrudes the cytosol and includes the nucleus in a 3D mesh from an input STL file using Gmsh.
+    Extrudes the cytosol in a 3D mesh from an input STL file using Gmsh.
 
     This function takes an STL file representing a biological surface mesh, typically the output from
     fix_surface_holes(), extrudes an extracellular layer, and generates a 3D volumetric mesh that includes the nucleus.
@@ -167,3 +198,4 @@ def extrude_cytosol_include_nucleus(input_file, output_file, height):
     # Finalize Gmsh
     gmsh.finalize()
     print(f"3D mesh saved to {output_file}")
+
