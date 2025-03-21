@@ -1,6 +1,3 @@
-import os
-import steps.interface
-import steps.geom as stgeom
 import numpy as np
 import trimesh
 import pymeshfix
@@ -127,7 +124,6 @@ def generate_ellipsoid_radii(ellipsoidity, volume=1):
     # assert np.isclose(computed_volume, volume, atol=1e-6), "Volume constraint violated!"
     return r_a, r_b, r_c
 
-
 def extrude_exo_from_cytosole_create_3D_mesh(input_file, output_file, height):
 
     """
@@ -198,4 +194,71 @@ def extrude_exo_from_cytosole_create_3D_mesh(input_file, output_file, height):
     # Finalize Gmsh
     gmsh.finalize()
     print(f"3D mesh saved to {output_file}")
+
+
+def create_full_mesh(
+        output_file,
+        ellipsoidity,
+        cell_volume=1676e-18,
+        nucleus_volume_ratio=0.2,
+        extracellular_volume_offset=3e-6,
+        mesh_algorithm=1,
+        mesh_size_min=0.166e-6,
+        mesh_size_max=0.4e-6,
+):
+    """
+    Creates a 3D mesh of a biological cell, including nucleus, cytosol, and extracellular space,
+    while maintaining specified volume constraints and ellipsoidity.
+
+    Parameters:
+    output_file (str): Path to save the generated mesh file.
+    ellipsoidity (float): Controls the elongation of the cell structure.
+    cell_volume (float, optional): Total volume of the cell in cubic meters (default: 1676e-18 m³).
+    nucleus_volume_ratio (float, optional): Ratio of nucleus volume to total cell volume (default: 0.2).
+    extracellular_volume_offset (float, optional): Offset added to extracellular radii (default: 3e-6 m).
+    mesh_algorithm (int, optional): Gmsh meshing algorithm (default: 1).
+    mesh_size_min (float, optional): Minimum mesh element size (default: 0.166e-6 m).
+    mesh_size_max (float, optional): Maximum mesh element size (default: 0.4e-6 m).
+    """
+
+    gmsh.initialize()
+    gmsh.model.add(f"mesh_ellipsoidity_{ellipsoidity}")
+
+    # Generate nucleus ellipsoid
+    rx, ry, rz = generate_ellipsoid_radii(ellipsoidity, cell_volume * nucleus_volume_ratio)
+    nucleus_surface_tag = create_ellipsoid_surface(0, 0, 0, rx, ry, rz, 0.05)
+    nucleus_volume_tag = gmsh.model.geo.addVolume([nucleus_surface_tag])
+
+    # Generate cytosol ellipsoid
+    rx, ry, rz = generate_ellipsoid_radii(ellipsoidity, cell_volume)
+    cytosol_surface_tag = create_ellipsoid_surface(0, 0, 0, rx, ry, rz, 0.05)
+    cytosol_volume_tag = gmsh.model.geo.addVolume([cytosol_surface_tag])
+
+    # Generate extracellular space by extending cytosol radii
+    extracellular_surface_tag = create_ellipsoid_surface(
+        0, 0, 0,
+        rx + extracellular_volume_offset,
+        ry + extracellular_volume_offset,
+        rz + extracellular_volume_offset,
+        0.05
+    )
+    extracellular_volume_tag = gmsh.model.geo.addVolume([extracellular_surface_tag])
+    gmsh.model.geo.synchronize()
+
+    # Define mesh settings
+    gmsh.option.setNumber("Mesh.Algorithm", mesh_algorithm)  # Choose meshing algorithm
+    gmsh.option.setNumber("Mesh.MeshSizeMin", mesh_size_min)  # Set minimum mesh size
+    gmsh.option.setNumber("Mesh.MeshSizeMax", mesh_size_max)  # Set maximum mesh size
+
+    gmsh.model.mesh.generate(3)
+    if output_file[-4:] != ".inp":
+        print()
+        print("Careful, suggested output file format compatible with STEPS and the rest of this software is .inp")
+        print()
+    gmsh.write(output_file)
+
+    # Uncomment for visualization/debugging
+    # gmsh.fltk.run()
+
+    gmsh.finalize()
 

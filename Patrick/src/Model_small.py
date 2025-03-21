@@ -50,14 +50,12 @@ def initialize_ellipsoid_mesh(mesh_path, scale, nucleus_volume, cytosol_volume, 
 
         # LISTEN
 
-        # Extracellular space
-        exo_tets = stgeom.TetList(mesh.tetGroups["Volume1"])
-
+        # Zellkern
+        nuc_tets = stgeom.TetList(mesh.tetGroups["Volume1"])
         # Zelle
         cytosol_tets = stgeom.TetList(mesh.tetGroups["Volume2"])
-
-        # Zellkern
-        nuc_tets = stgeom.TetList(mesh.tetGroups["Volume3"])
+        # Extracellular space
+        exo_tets = stgeom.TetList(mesh.tetGroups["Volume3"])
 
         # TETS im Cyt, die an die Membran grenzen
         mem_tris = cytosol_tets.surface
@@ -105,14 +103,13 @@ def initialize_ellipsoid_mesh(mesh_path, scale, nucleus_volume, cytosol_volume, 
         # Zellmembran
         cell_surface = stgeom.Patch.Create(cyt.surface & exo.surface, cyt, exo, cell_surface)
 
-        # DIFFUSIONS BARRIERE
+        # DIFFUSIONS BARRIERE, why is this necessary anywhere? We have discrete volumes anyways, so I dont think is makes sense
         # Zellkernmembran
-        nuc_mem = stgeom.DiffBoundary.Create(nuc.surface)
-
+        # nuc_mem = stgeom.DiffBoundary.Create(nuc.surface)
     return mesh, exo_tets, cytosol_tets, nuc_tets
 
 
-def create_model(p, species_names, mesh_path, plot_only_run):
+def create_model(p, species_names, mesh_path, mesh_scale, plot_only_run):
     """
     Creates a STEPS simulation model based on parameters, species, and mesh geometry.
 
@@ -206,7 +203,7 @@ def create_model(p, species_names, mesh_path, plot_only_run):
 
     # Load mesh and compartments
     mesh, exo_tets, cytosol_tets, nuc_tets = initialize_ellipsoid_mesh(mesh_path,
-                                                                    scale=10 ** -6,
+                                                                    scale=mesh_scale,
                                                                     nucleus_volume=nucleus_volume,
                                                                     cytosol_volume=cytosol_volume,
                                                                     extracellular_volume=extracellular_volume,
@@ -226,18 +223,18 @@ def create_model(p, species_names, mesh_path, plot_only_run):
     if plot_only_run == False:
         rs = stsave.ResultSelector(simulation)
         result_selectors = {
+            "EGF": rs.SUM(rs.TETS(exo_tets).EGF.Count),
             "EGF_EGFR": rs.SUM(rs.TRIS(cytosol_tets.surface).EGF_EGFR.Count),
             "EGF_EGFR2": rs.SUM(rs.TRIS(cytosol_tets.surface).EGF_EGFR2.Count),
             "EGF_EGFRp2": rs.SUM(rs.TRIS(cytosol_tets.surface).EGF_EGFRp2.Count),
             "EGF_EGFRp2_GAP": rs.SUM(rs.TRIS(cytosol_tets.surface).EGF_EGFRp2_GAP.Count),
             "ERK_cyto": rs.SUM(rs.TETS(cytosol_tets).ERK.Count),
             "ERKp_cyto": rs.SUM(rs.TETS(cytosol_tets).ERKp.Count),
-            "ERKp_nuc": rs.SUM(rs.TETS(nuc_tets).ERKp.Count),
+            # "ERKp_nuc": rs.SUM(rs.TETS(nuc_tets).ERKp.Count),
             "ERKpp": rs.SUM(rs.TETS(nuc_tets).ERKpp.Count),
-            "ERKp_cyto_conc": rs.TETS(cytosol_tets).ERKp.Conc,
-            "Concentrations": rs.TETS().LIST(species_dict["EGF_EGFR"],
-                                             species_dict["ERK"],
-                                             species_dict["ERKpp"]).Conc,
+            # "Concentrations": rs.TETS().LIST(species_dict["EGF_EGFR"],
+            #                                  species_dict["ERK"],
+            #                                  species_dict["ERKpp"]).Conc,
         }
         # Schedule saving
         for key, sel in result_selectors.items():

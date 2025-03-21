@@ -104,7 +104,7 @@ class SimManager:
                 os.remove((path + ".h5"))
 
 
-    def load_model(self, type):
+    def load_model(self, type, mesh_scale=1):
         """
         Load a simulation model based on the specified type.
 
@@ -117,13 +117,20 @@ class SimManager:
         """
         if type == "small":
             from src.Model_small import create_model
-            self.simulation, self.result_selector, self.mesh = create_model(self.parameters, self.species_names, self.mesh_path, self.plot_only_run)
+            self.simulation, self.result_selector, self.mesh = create_model(self.parameters,
+                                                                            self.species_names,
+                                                                            self.mesh_path,
+                                                                            mesh_scale,
+                                                                            self.plot_only_run)
             # self.model_data = pd.read_excel("/home/pb/steps_cell_signaling/Patrick/data_small_model.xlsx")
         elif type == "large":
             from src.Model_expanded_mini_sph_new import create_model
             # warnings.warn("The 'large' model type is not yet implemented", UserWarning)
-            self.simulation, self.result_selector, self.mesh = create_model(self.model_dataframe, self.parameters, self.species_names,
-                                                                            self.mesh_path, self.plot_only_run)
+            self.simulation, self.result_selector, self.mesh = create_model(self.model_dataframe,
+                                                                            self.parameters,
+                                                                            self.species_names,
+                                                                            self.mesh_path,
+                                                                            self.plot_only_run)
         else:
             warnings.warn(f"The '{type}' model type is not yet implemented", UserWarning)
 
