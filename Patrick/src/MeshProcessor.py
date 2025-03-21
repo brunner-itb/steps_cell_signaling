@@ -53,7 +53,7 @@ def create_ellipsoid_surface(center_x, center_y, center_z, r_a, r_b, r_c, mesh_s
     p_ny = gmsh.model.geo.addPoint(center_x, center_y - r_b, center_z, mesh_size)
     p_nz = gmsh.model.geo.addPoint(center_x, center_y, center_z - r_c, mesh_size)
 
-    # Define the ellipses
+    # Define the ellipses create Arcs to connect the points
     l1 = gmsh.model.geo.addEllipseArc(p_ax, p_center, p_nz, p_nz)
     l2 = gmsh.model.geo.addEllipseArc(p_nz, p_center, p_nx, p_nx)
     l3 = gmsh.model.geo.addEllipseArc(p_nx, p_center, p_az, p_az)
@@ -67,7 +67,7 @@ def create_ellipsoid_surface(center_x, center_y, center_z, r_a, r_b, r_c, mesh_s
     l11 = gmsh.model.geo.addEllipseArc(p_az, p_center, p_ny, p_ny)
     l12 = gmsh.model.geo.addEllipseArc(p_ny, p_center, p_nz, p_nz)
 
-    # Define the line loops
+    # Define the curve loops to connect the Arcs to create watertight boundaries
     ll1 = gmsh.model.geo.addCurveLoop([l5, l10, l4])
     ll2 = gmsh.model.geo.addCurveLoop([l9, -l5, l1])
     ll3 = gmsh.model.geo.addCurveLoop([-l10, l6, l3])
@@ -77,7 +77,7 @@ def create_ellipsoid_surface(center_x, center_y, center_z, r_a, r_b, r_c, mesh_s
     ll7 = gmsh.model.geo.addCurveLoop([-l11, -l3, l7])
     ll8 = gmsh.model.geo.addCurveLoop([-l2, -l7, -l12])
     #
-    # Create surfaces from the curve loops
+    # Create surfaces from the curve loops to fill watertight boundaries
     s1 = gmsh.model.geo.addSurfaceFilling([ll1])
     s2 = gmsh.model.geo.addSurfaceFilling([ll2])
     s3 = gmsh.model.geo.addSurfaceFilling([ll3])
@@ -87,9 +87,9 @@ def create_ellipsoid_surface(center_x, center_y, center_z, r_a, r_b, r_c, mesh_s
     s7 = gmsh.model.geo.addSurfaceFilling([ll7])
     s8 = gmsh.model.geo.addSurfaceFilling([ll8])
 
-    # Define the surface loop
+    # Define the surface loop add watertight surfaces to create the watertight surfacemesh
     sl1 = gmsh.model.geo.addSurfaceLoop([s1, s2, s3, s4, s5, s6, s7, s8])
-
+    # Kernel update to be available to all functions
     gmsh.model.geo.synchronize()
     return sl1
 
@@ -227,6 +227,7 @@ def create_full_mesh(
     # Generate nucleus ellipsoid
     rx, ry, rz = generate_ellipsoid_radii(ellipsoidity, cell_volume * nucleus_volume_ratio)
     nucleus_surface_tag = create_ellipsoid_surface(0, 0, 0, rx, ry, rz, 0.05)
+    # Defines surface mesh as volume mesh
     nucleus_volume_tag = gmsh.model.geo.addVolume([nucleus_surface_tag])
 
     # Generate cytosol ellipsoid
@@ -236,7 +237,7 @@ def create_full_mesh(
 
     # Generate extracellular space by extending cytosol radii
     extracellular_surface_tag = create_ellipsoid_surface(
-        0, 0, 0,
+        0, 0, 0,    # Center of the ellipsoid is at the origin
         rx + extracellular_volume_offset,
         ry + extracellular_volume_offset,
         rz + extracellular_volume_offset,
@@ -247,9 +248,10 @@ def create_full_mesh(
 
     # Define mesh settings
     gmsh.option.setNumber("Mesh.Algorithm", mesh_algorithm)  # Choose meshing algorithm
-    gmsh.option.setNumber("Mesh.MeshSizeMin", mesh_size_min)  # Set minimum mesh size
+    gmsh.option.setNumber("Mesh.MeshSizeMin", mesh_size_min)  # Set minimum mesh size, the smaller the finer
     gmsh.option.setNumber("Mesh.MeshSizeMax", mesh_size_max)  # Set maximum mesh size
 
+    # Generate the mesh in 3D
     gmsh.model.mesh.generate(3)
     if output_file[-4:] != ".inp":
         print()
@@ -258,7 +260,7 @@ def create_full_mesh(
     gmsh.write(output_file)
 
     # Uncomment for visualization/debugging
-    # gmsh.fltk.run()
+    gmsh.fltk.run()
 
     gmsh.finalize()
 
