@@ -2,6 +2,7 @@ import meshio
 import gmsh
 input_file = "/Users/evelynstangneth/Signaling_repo/mnt/steps_cell_signaling/Output/meshes_ellipsoidity/ellipsoidity_0.0_TEST.inp"
 
+# Convert the mesh to STL
 mesh = meshio.read(input_file)
 mesh.write(input_file[:-4] + ".stl")
 
@@ -13,3 +14,4 @@ gmsh.model.add("stl_mesh")
 gmsh.merge(input_file[:-4] + ".stl")
 gmsh.fltk.run()
 gmsh.finalize()
+
