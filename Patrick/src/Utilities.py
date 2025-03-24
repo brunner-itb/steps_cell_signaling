@@ -6,6 +6,9 @@ import pandas as pd
 import numpy as np
 import steps.geom as stgeom
 import steps.interface
+from os.path import abspath, dirname, join
+import socket
+import getpass
 
 def molar_to_molecules(M, Volume):
     """
@@ -86,3 +89,31 @@ def set_inital_values(self, factor):
                 print(compartment, species, value)
             except steps.API_2.sim.SolverCallError:
                 pass
+
+    
+# Helperfunction to set project root and add it to path
+def get_repo_path():
+
+    config = {
+        "evelynstangneth": { #User
+            #Hostname: Pathlocal
+            "EvelynsMacBook.local": "/Users/evelynstangneth/Signaling_repo/mnt/steps_cell_signaling/",
+            #Hostname: PathServer
+            "kivdul": "/home/evelyn/shared_files/signaling_repo/steps_cell_signaling/"
+        },
+        # Füge hier weitere Benutzer und Hostnamen hinzu
+        # "andererBenutzer": {
+        #     "andererHostname": "/pfad/zum/repo" z.B. once 
+        # }
+    }
+
+    hostname = socket.gethostname()
+    user = getpass.getuser()
+
+    repo_path = config.get(user, {}).get(hostname, None)
+    
+    if repo_path:
+        sys.path.append(repo_path)  # Add project root to path
+        return repo_path
+    else:
+        raise ValueError(f"no repo path found for '{user}' and Hostname '{hostname}'.")
