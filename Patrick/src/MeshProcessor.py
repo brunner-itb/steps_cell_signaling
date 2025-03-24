@@ -225,7 +225,7 @@ def create_full_mesh(
     gmsh.model.add(f"mesh_ellipsoidity_{ellipsoidity}")
 
     # Generate nucleus ellipsoid
-    rx, ry, rz = generate_ellipsoid_radii(ellipsoidity, cell_volume * nucleus_volume_ratio)
+    rx, ry, rz = generate_ellipsoid_radii(0, cell_volume * nucleus_volume_ratio)
     nucleus_surface_tag = create_ellipsoid_surface(0, 0, 0, rx, ry, rz, 0.05)
     # Defines surface mesh as volume mesh
     nucleus_volume_tag = gmsh.model.geo.addVolume([nucleus_surface_tag])
