@@ -22,7 +22,8 @@ no data saved, so be aware.
 #     replicat_id = int(sys.argv[1])
 
 sm = SimManager(parameters=p,
-                mesh_path = "/home/pb/steps_cell_signaling/Patrick/meshes/elipsoid_4.5.inp",
+                # mesh_path = "/home/pb/steps_cell_signaling/Patrick/meshes/elipsoid_4.5.inp",
+                mesh_path = "/home/pb/steps_cell_signaling/Patrick/meshes_ellipsoidity/ellipsoidity_0.5_coarse.inp",
                 save_path ="/home/pb/steps_cell_signaling/Patrick/saved_objects/testing/test2",  #without the .h5 suffix, but full file path please
                 parallel = True,
                 runname = "test",

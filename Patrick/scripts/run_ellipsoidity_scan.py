@@ -21,6 +21,7 @@ no data saved, so be aware.
 """
 
 ellipsoid_meshes_path = "/home/pb/steps_cell_signaling/Patrick/meshes_ellipsoidity/"
+
 mesh_files = [join(ellipsoid_meshes_path, f) for f in listdir(ellipsoid_meshes_path) if isfile(join(ellipsoid_meshes_path, f))]
 
 for mesh_idx, mesh_path in enumerate(mesh_files):
@@ -32,4 +33,4 @@ for mesh_idx, mesh_path in enumerate(mesh_files):
                     plot_only_run = False,
                     replace = True) # whether an already existing file should be overwritten or not. Might throw an error if there is an already existing one and this is set to false.
     sm.load_model(type="small")
-    sm.run(replicats = 30)
+    sm.run(replicats = 1)

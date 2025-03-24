@@ -28,7 +28,7 @@ def traverse_datasets(hdf_file):
 
 
 #%%
-hdf_path = "/home/pb/steps_cell_signaling/Patrick/saved_objects/testing/test"
+hdf_path = "/home/pb/steps_cell_signaling/Patrick/saved_objects/testing/test2"
 traverse_datasets(hdf_path + ".h5")
 # hdf = stsave.HDF5Handler("/home/pb/steps_cell_signaling/Patrick/saved_objects/initial_run/parallel_run_1")
 # hdf = stsave.HDF5Handler("/home/pb/steps_cell_signaling/Patrick/saved_objects/full_run/large_model")

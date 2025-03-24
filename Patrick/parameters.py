@@ -1,8 +1,8 @@
 import pandas as pd
 
 p = {
-    "time step" : 0.5,
-    "endtime" : 1,
+    "time step" : 0.25,
+    "endtime" : 5,
     "DC" : 4e-12,
     "k[0]" : 1e8,
     "k[666]" : 0.3,

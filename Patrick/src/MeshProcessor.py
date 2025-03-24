@@ -130,8 +130,8 @@ def extrude_exo_from_cytosole_create_3D_mesh(input_file, output_file, height):
     Extrudes the cytosol in a 3D mesh from an input STL file using Gmsh.
 
     This function takes an STL file representing a biological surface mesh, typically the output from
-    fix_surface_holes(), extrudes an extracellular layer, and generates a 3D volumetric mesh that includes the nucleus.
-    The output must be saved in Gmsh's `.msh` format.
+    fix_surface_holes(), then extrudes an extracellular layer, and generates a 3D volumetric mesh that includes the
+    nucleus. The output must be saved in Gmsh's `.msh` format.
 
     Parameters:
     -----------
@@ -193,7 +193,7 @@ def extrude_exo_from_cytosole_create_3D_mesh(input_file, output_file, height):
     gmsh.fltk.run()
     # Finalize Gmsh
     gmsh.finalize()
-    print(f"3D mesh saved to {output_file}")
+    print(f"3D mesh saved to {output_file}. Keep in mind that this function does not add a nucleus to the mesh!")
 
 
 def create_full_mesh(
@@ -225,7 +225,7 @@ def create_full_mesh(
     gmsh.model.add(f"mesh_ellipsoidity_{ellipsoidity}")
 
     # Generate nucleus ellipsoid
-    rx, ry, rz = generate_ellipsoid_radii(0, cell_volume * nucleus_volume_ratio)
+    rx, ry, rz = generate_ellipsoid_radii(ellipsoidity, cell_volume * nucleus_volume_ratio)
     nucleus_surface_tag = create_ellipsoid_surface(0, 0, 0, rx, ry, rz, 0.05)
     # Defines surface mesh as volume mesh
     nucleus_volume_tag = gmsh.model.geo.addVolume([nucleus_surface_tag])
@@ -260,7 +260,7 @@ def create_full_mesh(
     gmsh.write(output_file)
 
     # Uncomment for visualization/debugging
-    gmsh.fltk.run()
+    # gmsh.fltk.run()
 
     gmsh.finalize()
 

@@ -101,10 +101,12 @@ def get_repo_path():
             #Hostname: PathServer
             "kivdul": "/home/evelyn/shared_files/signaling_repo/steps_cell_signaling/"
         },
-        # Füge hier weitere Benutzer und Hostnamen hinzu
-        # "andererBenutzer": {
-        #     "andererHostname": "/pfad/zum/repo" z.B. once 
-        # }
+        "pb": { #User
+            #Hostname: Pathlocal
+            "echo": "/home/pb/steps_cell_signaling/",
+            #Hostname: PathServer
+            "kivdul": "/home/pb/steps_cell_signaling/"
+        },
     }
 
     hostname = socket.gethostname()

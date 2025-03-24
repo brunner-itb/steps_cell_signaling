@@ -91,17 +91,20 @@ class SimManager:
         """
         Set up directories and environment.
         """
+        comm = MPI.COMM_WORLD
+        rank = comm.Get_rank()
 
         save_dir = os.path.dirname(path)  # Get the parent directory of the path
 
-        if not os.path.exists(save_dir):  # Check if the directory exists
-            os.makedirs(save_dir)  # Create it if it doesn't exist
-
-        comm = MPI.COMM_WORLD
-        rank = comm.Get_rank()
         if rank == 0: # makes sure that only one process does this
+            if not os.path.exists(save_dir):  # Check if the directory exists
+                os.makedirs(save_dir, exist_ok=True)  # Create it if it doesn't exist
+
             if os.path.isfile(path + ".h5") and self.replace and not self.plot_only_run:
-                os.remove((path + ".h5"))
+                try:
+                    os.remove((path + ".h5"))
+                except FileNotFoundError:
+                    pass  # If the file was already removed by another process, ignore it
 
 
     def load_model(self, type, mesh_scale=1):
