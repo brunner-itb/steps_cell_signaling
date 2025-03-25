@@ -29,7 +29,7 @@ def traverse_datasets(hdf_file):
 
 #%%
 # hdf_path = "/home/pb/steps_cell_signaling/Patrick/saved_objects/ellipsoidity_2/mesh_0/result"
-hdf_path = "/home/pb/steps_cell_signaling/Patrick/saved_objects/testing/test2"
+hdf_path = "/home/pb/steps_cell_signaling/Patrick/saved_objects/testing/test"
 # traverse_datasets(hdf_path + ".h5")
 # hdf = stsave.HDF5Handler("/home/pb/steps_cell_signaling/Patrick/saved_objects/initial_run/parallel_run_1")
 # hdf = stsave.HDF5Handler("/home/pb/steps_cell_signaling/Patrick/saved_objects/full_run/large_model")
@@ -54,7 +54,8 @@ for idx, (res, species_name) in enumerate(zip(results, species_names)):
     mean_data = np.mean(res.data[:,:,0], axis=0)
     std_data = np.std(res.data[:,:,0], axis=0)
     ax = axes[idx]
-    ax.scatter(res.time[0], mean_data, label='Mean', s = 0.5)
+    # ax.scatter(res.time[0], mean_data, label='Mean', s = 0.5)
+    ax.plot(res.time[0], mean_data, label='Mean')
     ax.fill_between(res.time[0], mean_data - std_data, mean_data + std_data, alpha=0.3, label='std')
 
     if idx >= len(results) - n_cols:

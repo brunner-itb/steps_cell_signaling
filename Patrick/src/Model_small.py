@@ -20,8 +20,10 @@ def initialize_ellipsoid_mesh(mesh_path, scale, nucleus_volume, cytosol_volume, 
 
         # Extracellular space
         exo_tets = stgeom.TetList(mesh.tetGroups["Volume1"])
+
         # Zelle
         cytosol_tets = stgeom.TetList(mesh.tetGroups["Volume2"])
+
         # Zellkern
         nuc_tets = stgeom.TetList(mesh.tetGroups["Volume3"])
 
@@ -151,7 +153,7 @@ def create_model(p, species_names, mesh_path, mesh_scale, plot_only_run):
 
         # Surface system (cell membrane)
         with cell_surface_system:
-            species_dict["EGFR"].s + species_dict["EGF"].i < r[1] > species_dict["EGF_EGFR"].s
+            species_dict["EGFR"].s + species_dict["EGF"].o < r[1] > species_dict["EGF_EGFR"].s
             species_dict["EGF_EGFR"].s + species_dict["EGF_EGFR"].s < r[2] > species_dict["EGF_EGFR2"].s
             species_dict["EGF_EGFR2"].s < r[3] > species_dict["EGF_EGFRp2"].s
             species_dict["EGF_EGFRp2"].s + species_dict["GAP"].i < r[4] > species_dict["EGF_EGFRp2_GAP"].s

@@ -36,12 +36,12 @@ try:
     # Initialize the simulation manager
     logging.info("Initializing the simulation manager...")
     sm = SimManager(parameters=p,
+                    # mesh_path = "/home/pb/steps_cell_signaling/Patrick/meshes/sph_1.0.inp",
                     # mesh_path = "/home/pb/steps_cell_signaling/Patrick/meshes/elipsoid_4.5.inp",
-                    #/Users/evelynstangneth/Signaling_repo/mnt/steps_cell_signaling/meshes_ellipsoidity
-                    #mesh_path = "/home/pb/steps_cell_signaling/Patrick/meshes_ellipsoidity/ellipsoidity_0.5_coarse.inp",
+                    mesh_path = "/home/pb/steps_cell_signaling/Patrick/meshes_ellipsoidity/ellipsoidity_0.5.inp",
                     #save_path ="/home/pb/steps_cell_signaling/Patrick/saved_objects/testing/test2",  #without the .h5 suffix, but full file path please
-                    mesh_path=f"{base_path}Patrick/meshes_ellipsoidity/ellipsoidity_0.8.inp",
-                    save_path=f"{base_path}Patrick/saved_objects/testing/test2",  # Full file path without the .h5 suffix
+                    # mesh_path=f"{base_path}Patrick/meshes_ellipsoidity/ellipsoidity_0.8.inp",
+                    save_path=f"{base_path}Patrick/saved_objects/testing/test3",  # Full file path without the .h5 suffix
                     parallel = True,
                     runname = "test",
                     plot_only_run = False,
@@ -49,7 +49,7 @@ try:
     logging.info("Simulation manager initialized.")
     # Load the model
     logging.info("Loading the model...")
-    sm.load_model(type="small")
+    sm.load_model(type="small", mesh_scale=1e-6)
     logging.info("Model loaded successfully.")
 
     # Run the simulation
