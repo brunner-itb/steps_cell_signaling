@@ -7,14 +7,15 @@ import steps.saving as stsave
 import warnings
 import numpy as np
 import os
+import sys
 import time
 from mpi4py import MPI
 import pandas as pd
-from src.Utilities import set_inital_values
+from Patrick.src.Utilities import set_inital_values,get_repo_path
 
 
 class SimManager:
-    def __init__(self, parameters, mesh_path, save_path="saved_objects/initial_run/initial_run.h5",
+    def __init__(self, parameters, mesh_path, save_path=None,
                  parallel=False, runname: str = "initial_run", plot_only_run: bool = True, replace: bool = False):
         """
          Manages the configuration, setup, and execution of biochemical simulations.
@@ -61,12 +62,18 @@ class SimManager:
                 Executes the simulation and saves the results to an HDF5 file.
         """
 
+        # Dynamically resolve the base repository path
+        self.base_path = get_repo_path()
+
+        # Resolve paths dynamically
         self.parameters = parameters
         self.species_names = None
         self.model_dataframe = None
         self.endtime = self.parameters["endtime"]
-        self.mesh_path = mesh_path
-        self.save_path = save_path
+        self.mesh_path = mesh_path# Resolve mesh path
+        #self.mesh_path = os.path.join(self.base_path, mesh_path)  # Resolve mesh path
+        #self.save_path = os.path.join(self.base_path, save_path) if save_path else os.path.join(self.base_path, "saved_objects/initial_run/initial_run.h5")
+        self.save_path = save_path if save_path else f"{self.base_path}saved_objects/initial_run/initial_run.h5"
         self.plot_only_run = plot_only_run
         self.replace = replace
         self.simulation = None
@@ -81,8 +88,12 @@ class SimManager:
         self._load_model_dataframe()
 
     def _load_model_dataframe(self):
+        """
+        Load and clean the model dataframe dynamically based on the parameters.
+        """
         from src.Utilities import dataframe_cleanup
-        df = pd.read_excel(self.parameters["big_model_mini_sph_df_path"])
+        df_path = f"{self.base_path}{self.parameters["big_model_mini_sph_df_path"]}"
+        df = pd.read_excel(df_path)
         df = dataframe_cleanup(df, ["Species"])
         self.model_dataframe = df
         self.species_names = df.Species.values

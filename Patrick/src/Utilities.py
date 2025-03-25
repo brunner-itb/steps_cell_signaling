@@ -1,7 +1,9 @@
 from scipy.constants import N_A
 import contextlib
 import io
+import os
 import sys
+import json
 import pandas as pd
 import numpy as np
 import steps.geom as stgeom
@@ -63,7 +65,8 @@ def set_inital_values(self, factor):
     - If a value is NaN, it defaults to 0.
     - Any `SolverCallError` from STEPS API is caught and ignored.
     '''
-    df = pd.read_excel(self.parameters["big_model_mini_sph_df_path"])
+    df_path = f"{self.base_path}{self.parameters["big_model_mini_sph_df_path"]}"
+    df = pd.read_excel(df_path)
     df = dataframe_cleanup(df, ["Species"])
 
     # get the compartments and map it to the corresponding column in the df
@@ -92,30 +95,46 @@ def set_inital_values(self, factor):
 
     
 # Helperfunction to set project root and add it to path
+
 def get_repo_path():
+    """
+    Retrieves the repository path based on the current user and hostname.
 
-    config = {
-        "evelynstangneth": { #User
-            #Hostname: Pathlocal
-            "EvelynsMacBook.local": "/Users/evelynstangneth/Signaling_repo/mnt/steps_cell_signaling/",
-            #Hostname: PathServer
-            "kivdul": "/home/evelyn/shared_files/signaling_repo/steps_cell_signaling/"
-        },
-        "pb": { #User
-            #Hostname: Pathlocal
-            "echo": "/home/pb/steps_cell_signaling/",
-            #Hostname: PathServer
-            "kivdul": "/home/pb/steps_cell_signaling/"
-        },
-    }
+    This function reads the configuration from a `config.json` file located in the
+    `steps_cell_signaling` directory. It dynamically determines the repository path
+    based on the current system's username and hostname.
 
+    Returns:
+        str: The repository path for the current user and hostname.
+
+    Raises:
+        FileNotFoundError: If the `config.json` file is not found.
+        ValueError: If no repository path is found for the current user and hostname.
+    """
+    # Path to the configuration file
+    config_file = os.path.join(os.path.dirname(__file__), '..','..', 'config.json')
+
+    # Load the configuration file
+    try:
+        with open(config_file, 'r') as f:
+            config = json.load(f)
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Configuration file '{config_file}' not found. Please add the config.json as described i the README.")
+    except json.JSONDecodeError:
+        raise ValueError(f"Error parsing the configuration file '{config_file}'.")
+
+    # Get the current hostname and username
     hostname = socket.gethostname()
     user = getpass.getuser()
 
-    repo_path = config.get(user, {}).get(hostname, None)
-    
+    # Retrieve the repository path from the configuration
+    user_config = config.get("users", {}).get(user, {})
+    repo_path = user_config.get(hostname, None)
+
     if repo_path:
-        sys.path.append(repo_path)  # Add project root to path
+        sys.path.append(repo_path)  # Add the repository path to the Python path
         return repo_path
     else:
-        raise ValueError(f"no repo path found for '{user}' and Hostname '{hostname}'.")
+        raise ValueError(f"No repository path found for user '{user}' and hostname '{hostname}'.")
+
+
