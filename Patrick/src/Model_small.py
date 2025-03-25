@@ -9,7 +9,7 @@ import numpy as np
 import os
 
 
-def initialize_ellipsoid_mesh(mesh_path, scale, nucleus_volume, cytosol_volume, extracellular_volume, cell_surface):
+def initialize_ellipsoid_mesh(mesh_path, scale, nucleus_volume, cytosol_volume, extracellular_volume, cell_surface_system):
     # Load mesh and compartments
     assert os.path.isfile(mesh_path), "mesh_path does not exist. Please check the path and try again."
     mesh = stgeom.TetMesh.LoadAbaqus(mesh_path, scale=scale)
@@ -18,44 +18,44 @@ def initialize_ellipsoid_mesh(mesh_path, scale, nucleus_volume, cytosol_volume, 
 
         # LISTEN
 
-        # Zellkern
-        nuc_tets = stgeom.TetList(mesh.tetGroups["Volume1"])
+        # Extracellular space
+        exo_tets = stgeom.TetList(mesh.tetGroups["Volume1"])
         # Zelle
         cytosol_tets = stgeom.TetList(mesh.tetGroups["Volume2"])
-        # Extracellular space
-        exo_tets = stgeom.TetList(mesh.tetGroups["Volume3"])
+        # Zellkern
+        nuc_tets = stgeom.TetList(mesh.tetGroups["Volume3"])
 
-        # TETS im Cyt, die an die Membran grenzen
-        mem_tris = cytosol_tets.surface
-        mem_tet = stgeom.TetList()
-        for tri in mem_tris:
-            for tet in tri.tetNeighbs:
-                mem_tet.append(tet)
-        mem_tet = stgeom.TetList([tet for tet in mem_tet if tet in cytosol_tets])
-
-        # Hälfte Cyto
-        half_cyt = stgeom.TetList(tet for tet in cytosol_tets if tet.center.y > 0)
-        # TRIS vom Durchschnitt
-        slice_cyt = stgeom.TriList(half_cyt.surface & (cytosol_tets - half_cyt).surface)
-        # die Tets am Querschnitt
-        slice_tet_cyt = stgeom.TetList()
-        triInds_cyt = []
-        for tri in slice_cyt:
-            for tet in tri.tetNeighbs:
-                slice_tet_cyt.append(tet)
-                triInds_cyt.append(tri.idx)
-
-        # Häfte Nuc
-        half_nuc = stgeom.TetList(tet for tet in nuc_tets if tet.center.y > 0)
-        # TRIS vom Durchscnitt
-        slice_nuc = stgeom.TriList(half_nuc.surface & (nuc_tets - half_nuc).surface)
-        # die Tets am Querschnitt
-        slice_tet_nuc = stgeom.TetList()
-        triInds_nuc = []
-        for tri in slice_nuc:
-            for tet in tri.tetNeighbs:
-                slice_tet_nuc.append(tet)
-                triInds_nuc.append(tri.idx)
+        # # TETS im Cyt, die an die Membran grenzen
+        # mem_tris = cytosol_tets.surface
+        # mem_tet = stgeom.TetList()
+        # for tri in mem_tris:
+        #     for tet in tri.tetNeighbs:
+        #         mem_tet.append(tet)
+        # mem_tet = stgeom.TetList([tet for tet in mem_tet if tet in cytosol_tets])
+        #
+        # # Hälfte Cyto
+        # half_cyt = stgeom.TetList(tet for tet in cytosol_tets if tet.center.y > 0)
+        # # TRIS vom Durchschnitt
+        # slice_cyt = stgeom.TriList(half_cyt.surface & (cytosol_tets - half_cyt).surface)
+        # # die Tets am Querschnitt
+        # slice_tet_cyt = stgeom.TetList()
+        # triInds_cyt = []
+        # for tri in slice_cyt:
+        #     for tet in tri.tetNeighbs:
+        #         slice_tet_cyt.append(tet)
+        #         triInds_cyt.append(tri.idx)
+        #
+        # # Häfte Nuc
+        # half_nuc = stgeom.TetList(tet for tet in nuc_tets if tet.center.y > 0)
+        # # TRIS vom Durchscnitt
+        # slice_nuc = stgeom.TriList(half_nuc.surface & (nuc_tets - half_nuc).surface)
+        # # die Tets am Querschnitt
+        # slice_tet_nuc = stgeom.TetList()
+        # triInds_nuc = []
+        # for tri in slice_nuc:
+        #     for tet in tri.tetNeighbs:
+        #         slice_tet_nuc.append(tet)
+        #         triInds_nuc.append(tri.idx)
 
 
         # COMPARTMENTS
@@ -69,11 +69,11 @@ def initialize_ellipsoid_mesh(mesh_path, scale, nucleus_volume, cytosol_volume, 
         exo = stgeom.Compartment(exo_tets, extracellular_volume, name="exo")
 
         # Zellmembran
-        cell_surface = stgeom.Patch(cyt.surface & exo.surface, cyt, exo, cell_surface, name="cell_surface")
+        cell_surface = stgeom.Patch(cyt.surface & exo.surface, cyt, exo, cell_surface_system, name="cell_surface")
 
         # DIFFUSIONS BARRIERE, why is this necessary anywhere? We have discrete volumes anyways, so I dont think this makes sense
         # Zellkernmembran
-        # nuc_mem = stgeom.DiffBoundary.Create(nuc.surface)
+        nuc_mem = stgeom.DiffBoundary.Create(nuc.surface)
     return mesh, exo_tets, cytosol_tets, nuc_tets
 
 
@@ -122,7 +122,7 @@ def create_model(p, species_names, mesh_path, mesh_scale, plot_only_run):
         cytosol_volume = stmodel.VolumeSystem(name="cytosol_volume")
         nucleus_volume = stmodel.VolumeSystem(name="nucleus_volume")
         extracellular_volume = stmodel.VolumeSystem(name="extracellular_volume")
-        cell_surface = stmodel.SurfaceSystem(name = "cell_surface")
+        cell_surface_system = stmodel.SurfaceSystem(name = "cell_surface")
 
         # Create a dictionary to hold the created species
         for sp_name in species_names:
@@ -150,8 +150,8 @@ def create_model(p, species_names, mesh_path, mesh_scale, plot_only_run):
             stmodel.Diffusion(species_dict["ERKpp"], p["DC"])
 
         # Surface system (cell membrane)
-        with cell_surface:
-            species_dict["EGFR"].s + species_dict["EGF"].o < r[1] > species_dict["EGF_EGFR"].s
+        with cell_surface_system:
+            species_dict["EGFR"].s + species_dict["EGF"].i < r[1] > species_dict["EGF_EGFR"].s
             species_dict["EGF_EGFR"].s + species_dict["EGF_EGFR"].s < r[2] > species_dict["EGF_EGFR2"].s
             species_dict["EGF_EGFR2"].s < r[3] > species_dict["EGF_EGFRp2"].s
             species_dict["EGF_EGFRp2"].s + species_dict["GAP"].i < r[4] > species_dict["EGF_EGFRp2_GAP"].s
@@ -175,7 +175,7 @@ def create_model(p, species_names, mesh_path, mesh_scale, plot_only_run):
                                                                     nucleus_volume=nucleus_volume,
                                                                     cytosol_volume=cytosol_volume,
                                                                     extracellular_volume=extracellular_volume,
-                                                                    cell_surface=cell_surface)
+                                                                    cell_surface_system=cell_surface_system)
     system_volume = mesh.Vol
 
     # Initialize RNG and Simulation

@@ -223,17 +223,7 @@ def create_full_mesh(
 
     gmsh.initialize()
     gmsh.model.add(f"mesh_ellipsoidity_{ellipsoidity}")
-
-    # Generate nucleus ellipsoid
-    rx, ry, rz = generate_ellipsoid_radii(ellipsoidity, cell_volume * nucleus_volume_ratio)
-    nucleus_surface_tag = create_ellipsoid_surface(0, 0, 0, rx, ry, rz, 0.05)
-    # Defines surface mesh as volume mesh
-    nucleus_volume_tag = gmsh.model.geo.addVolume([nucleus_surface_tag])
-
-    # Generate cytosol ellipsoid
     rx, ry, rz = generate_ellipsoid_radii(ellipsoidity, cell_volume)
-    cytosol_surface_tag = create_ellipsoid_surface(0, 0, 0, rx, ry, rz, 0.05)
-    cytosol_volume_tag = gmsh.model.geo.addVolume([cytosol_surface_tag])
 
     # Generate extracellular space by extending cytosol radii
     extracellular_surface_tag = create_ellipsoid_surface(
@@ -244,8 +234,18 @@ def create_full_mesh(
         0.05
     )
     extracellular_volume_tag = gmsh.model.geo.addVolume([extracellular_surface_tag])
-    gmsh.model.geo.synchronize()
 
+    # Generate cytosol ellipsoid
+    cytosol_surface_tag = create_ellipsoid_surface(0, 0, 0, rx, ry, rz, 0.05)
+    cytosol_volume_tag = gmsh.model.geo.addVolume([cytosol_surface_tag])
+
+    # Generate nucleus ellipsoid
+    rx, ry, rz = generate_ellipsoid_radii(0, cell_volume * nucleus_volume_ratio)
+    nucleus_surface_tag = create_ellipsoid_surface(0, 0, 0, rx, ry, rz, 0.05)
+    # Defines surface mesh as volume mesh
+    nucleus_volume_tag = gmsh.model.geo.addVolume([nucleus_surface_tag])
+
+    gmsh.model.geo.synchronize()
     # Define mesh settings
     gmsh.option.setNumber("Mesh.Algorithm", mesh_algorithm)  # Choose meshing algorithm
     gmsh.option.setNumber("Mesh.MeshSizeMin", mesh_size_min)  # Set minimum mesh size, the smaller the finer
@@ -260,7 +260,7 @@ def create_full_mesh(
     gmsh.write(output_file)
 
     # Uncomment for visualization/debugging
-    # gmsh.fltk.run()
+    gmsh.fltk.run()
 
     gmsh.finalize()
 
