@@ -43,7 +43,7 @@ def dataframe_cleanup(df, columns=["Species"]):
 
 
 
-def set_inital_values(self, factor):
+def set_inital_values(sim_manager, factor):
     '''
     Initializes species counts in compartments based on an Excel configuration file.
 
@@ -58,14 +58,14 @@ def set_inital_values(self, factor):
 
     Notes
     -----
-    - Reads the data from an Excel file specified in `self.parameters["big_model_mini_sph_df_path"]`.
+    - Reads the data from an Excel file specified in `sim_manager.parameters["big_model_mini_sph_df_path"]`.
     - Cleans the dataframe and extracts species names.
     - Identifies compartments in the simulation where species should be initialized.
     - Assigns initial values from the dataframe to species in respective compartments.
     - If a value is NaN, it defaults to 0.
     - Any `SolverCallError` from STEPS API is caught and ignored.
     '''
-    df_path = f"{self.base_path}{self.parameters["big_model_mini_sph_df_path"]}"
+    df_path = f"{sim_manager.base_path}{sim_manager.parameters["big_model_mini_sph_df_path"]}"
     df = pd.read_excel(df_path)
     df = dataframe_cleanup(df, ["Species"])
 
@@ -75,20 +75,20 @@ def set_inital_values(self, factor):
 
     # get the available compartments from the simulation instance
     compartments = []
-    for key, value in self.simulation._children.items():  # extract the compartment types from the geometry
+    for key, value in sim_manager.simulation._children.items():  # extract the compartment types from the geometry
         if isinstance(value, stgeom._TetCompartment) or isinstance(value, stgeom._TetPatch):
             compartments.append(value)
 
     # set the initial values for each species in each compartment
     for compartment in compartments_to_init_map.keys():
-        for s_idx, species in enumerate(self.species_names):
+        for s_idx, species in enumerate(sim_manager.species_names):
             # get the desired initial_value from the df
             initial_value = df.loc[df.Species == species][compartments_to_init_map[compartment]].values
             initial_value = 0 if np.isnan(initial_value) else initial_value
             try:
                 # set the initial value. If this species does not exist in the compartment, ignore the error and continue
-                getattr(getattr(self.simulation, compartment), species).Count = initial_value * factor
-                value = getattr(getattr(self.simulation, compartment), species).Count
+                getattr(getattr(sim_manager.simulation, compartment), species).Count = initial_value * factor
+                value = getattr(getattr(sim_manager.simulation, compartment), species).Count
                 print(compartment, species, value)
             except steps.API_2.sim.SolverCallError:
                 pass
