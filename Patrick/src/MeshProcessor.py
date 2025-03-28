@@ -2,6 +2,7 @@ import numpy as np
 import trimesh
 import pymeshfix
 import gmsh
+import sys
 
 
 def fix_surface_holes(import_file, output_file):
@@ -233,19 +234,22 @@ def create_full_mesh(
         rz + extracellular_volume_offset,
         0.05
     )
-    extracellular_volume_tag = gmsh.model.geo.addVolume([extracellular_surface_tag])
 
-    # Generate cytosol ellipsoid
+    # Generate cytosol ellipsoid surface
     cytosol_surface_tag = create_ellipsoid_surface(0, 0, 0, rx, ry, rz, 0.05)
-    cytosol_volume_tag = gmsh.model.geo.addVolume([cytosol_surface_tag])
 
-    # Generate nucleus ellipsoid
+    # Generate nucleus ellipsoid surface
     rx, ry, rz = generate_ellipsoid_radii(0, cell_volume * nucleus_volume_ratio)
     nucleus_surface_tag = create_ellipsoid_surface(0, 0, 0, rx, ry, rz, 0.05)
-    # Defines surface mesh as volume mesh
+
+    # Define the volumes, more specifically the ellipsoid shells
+    extracellular_volume_tag = gmsh.model.geo.addVolume([extracellular_surface_tag, cytosol_surface_tag])
+    cytosol_volume_tag = gmsh.model.geo.addVolume([cytosol_surface_tag, nucleus_surface_tag])
     nucleus_volume_tag = gmsh.model.geo.addVolume([nucleus_surface_tag])
 
     gmsh.model.geo.synchronize()
+
+
     # Define mesh settings
     gmsh.option.setNumber("Mesh.Algorithm", mesh_algorithm)  # Choose meshing algorithm
     gmsh.option.setNumber("Mesh.MeshSizeMin", mesh_size_min)  # Set minimum mesh size, the smaller the finer
@@ -260,7 +264,5 @@ def create_full_mesh(
     gmsh.write(output_file)
 
     # Uncomment for visualization/debugging
-    gmsh.fltk.run()
-
+    # gmsh.fltk.run()
     gmsh.finalize()
-
