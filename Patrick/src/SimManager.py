@@ -195,7 +195,7 @@ class SimManager:
                     # self.simulation.cyt.ERK.Count = self.parameters["ERK_0"]
                     # self.simulation.cyt.P3.Count = self.parameters["P3_0"]
 
-                    # self.simulation.nuc_mem.ERKp.DiffusionActive = True
+                    self.simulation.nuc_mem.ERKp.DiffusionActive = True
 
                     start_time = time.time()
                     self.simulation.run(self.endtime)
