@@ -75,7 +75,7 @@ def initialize_ellipsoid_mesh(mesh_path, scale, nucleus_volume, cytosol_volume, 
 
         # DIFFUSIONS BARRIERE, why is this necessary anywhere? We have discrete volumes anyways, so I dont think this makes sense
         # Zellkernmembran
-        nuc_mem = stgeom.DiffBoundary.Create(nuc.surface)
+        nuc_mem = stgeom.DiffBoundary(nuc.surface, name="nuc_mem")
     return mesh, exo_tets, cytosol_tets, nuc_tets
 
 
