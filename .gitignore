@@ -8,4 +8,10 @@
 /Patrick/meshes_ellipsoidity/
 /Patrick/saved_objects/
 /Patrick/__pycache__/
-/Patrick/src/__pycache__/
+/Patrick/src/__pycache__
+/Patrick/scripts/.logs/
+/Patrick/debugging_scripts/.logs/
+/Patrick/.pytest_cache/
+/.idea/
+/Patrick/.logs/
+

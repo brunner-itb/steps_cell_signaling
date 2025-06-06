@@ -6,6 +6,12 @@ import h5py
 import numpy as np
 import re
 import math
+import os
+
+try:
+    from Patrick.src.Utilities import get_repo_path
+except ModuleNotFoundError:
+    from src.Utilities import get_repo_path
 
 def traverse_datasets(hdf_file):
 
@@ -28,15 +34,18 @@ def traverse_datasets(hdf_file):
 
 
 #%%
+base_path = get_repo_path()
 # hdf_path = "/home/pb/steps_cell_signaling/Patrick/saved_objects/ellipsoidity_2/mesh_0/result"
-hdf_path = "/home/pb/steps_cell_signaling/Patrick/saved_objects/testing/test"
+# hdf_path = f"{base_path}Patrick/saved_objects/testing/test3"
+hdf_path = f"/home/pb/steps_cell_signaling/Patrick/saved_objects/ellipsoidity/mesh_10/result"
 # traverse_datasets(hdf_path + ".h5")
 # hdf = stsave.HDF5Handler("/home/pb/steps_cell_signaling/Patrick/saved_objects/initial_run/parallel_run_1")
 # hdf = stsave.HDF5Handler("/home/pb/steps_cell_signaling/Patrick/saved_objects/full_run/large_model")
 hdf = stsave.HDF5Handler(hdf_path)
 # with stsave.HDF5Handler("/home/pb/steps_cell_signaling/Patrick/saved_objects/initial_run/parallel_run_1") as hdf:
 # results = hdf["long_run"].results
-results = hdf["test"].results
+# results = hdf["test"].results
+results = hdf["ellipsoidity"].results
 
 # extract the species names for the result_selector label via regex
 full_labels = [x.labels for x in results]
@@ -70,4 +79,6 @@ for i in range(idx + 1, len(axes)):
     fig.delaxes(axes[i])
 
 plt.tight_layout()
-plt.show()
+# plt.show()  # Comment out interactive display
+plt.savefig(os.path.dirname(hdf_path) + '/species_plots.png', dpi=300, bbox_inches='tight')  # Save with high resolution
+plt.close()  # Clean up the figure
