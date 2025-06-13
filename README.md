@@ -1,45 +1,50 @@
 This repo attempts to streamline the modeling of cell signaling via the STEPS package 
 (https://steps.sourceforge.net/STEPS/default.php) and is very much a work in progress.
-1. **Dynamic Path Resolution**:
-cd into steps_cell_signaling 
-run `pwd`to get your path that you should add to your Python path with  `export PYTHONPATH=yourpwdpath` example `export PYTHONPATH=/Users/evelynstangneth/Signaling_repo/mnt/steps_cell_signaling`
 
-2. **Dynamic Path Resolution**:
-create a `config.json` in the following file stucture
+OLD:
+         1. **Dynamic Path Resolution**:
+         cd into steps_cell_signaling 
+         run `pwd`to get your path that you should add to your Python path with  `export PYTHONPATH=yourpwdpath` example `export PYTHONPATH=/Users/evelynstangneth/Signaling_repo/mnt/steps_cell_signaling`
+         
+         2. **Dynamic Path Resolution**:
+         create a `config.json` in the following file stucture
+         
+         3. **File Structure**:
+            - Ensure the following directory structure is in place:
+              ```
+              Signaling_repo/
+              └── mnt/
+                  └── steps_cell_signaling/
+                      ├── Patrick/
+                      │   ├── src/
+                      │   │   ├── __init__.py
+                      │   │   ├── SimManager.py
+                      │   │   ├── Utilities.py
+                      │   ├── meshes_ellipsoidity/
+                      │   │   ├── example.inp
+                      │   ├── saved_objects/
+                      │   │   └── testing/
+                      │   ├── run.py
+                      ├── config.json
+              ```
+         
+         Before running, add your repo path to the `config.json` in the 
+          with the following form:
+         ```json
+         {
+             "users": {
+                 "username": {
+                     "hostname": "your pwd python path"
+                 }
+                     }
+         }
+         ```
+         used in `Utilities.py`. 
+         To get your hostname and username, use `socket.gethostname()` and `getpass.getuser()` 
+         in a Python console. 
+NEW:
+``pip install -e .`` in the root of this project. All imports can then be done relative to this. Still experimental, careful!
 
-3. **File Structure**:
-   - Ensure the following directory structure is in place:
-     ```
-     Signaling_repo/
-     └── mnt/
-         └── steps_cell_signaling/
-             ├── Patrick/
-             │   ├── src/
-             │   │   ├── __init__.py
-             │   │   ├── SimManager.py
-             │   │   ├── Utilities.py
-             │   ├── meshes_ellipsoidity/
-             │   │   ├── example.inp
-             │   ├── saved_objects/
-             │   │   └── testing/
-             │   ├── run.py
-             ├── config.json
-     ```
-
-Before running, add your repo path to the `config.json` in the 
- with the following form:
-```json
-{
-    "users": {
-        "username": {
-            "hostname": "your pwd python path"
-        }
-            }
-}
-```
-used in `Utilities.py`. 
-To get your hostname and username, use `socket.gethostname()` and `getpass.getuser()` 
-in a Python console. 
 
 4. **Run the run.py**:
 To run it in parallel use ``mpirun -n N python3 run.py`` with N as the number of CPU cores
