@@ -37,7 +37,7 @@ def traverse_datasets(hdf_file):
 base_path = get_repo_path()
 # hdf_path = "/home/pb/steps_cell_signaling/Patrick/saved_objects/ellipsoidity_2/mesh_0/result"
 # hdf_path = f"{base_path}Patrick/saved_objects/testing/test3"
-hdf_path = f"/home/pb/steps_cell_signaling/Patrick/saved_objects/ellipsoidity/mesh_10/result"
+hdf_path = f"/home/pb/steps_cell_signaling/Patrick/saved_objects/ellipsoidity/mesh_0/result"
 # traverse_datasets(hdf_path + ".h5")
 # hdf = stsave.HDF5Handler("/home/pb/steps_cell_signaling/Patrick/saved_objects/initial_run/parallel_run_1")
 # hdf = stsave.HDF5Handler("/home/pb/steps_cell_signaling/Patrick/saved_objects/full_run/large_model")
@@ -56,6 +56,8 @@ num_species = len(species_names)
 grid_size = math.ceil(math.sqrt(num_species))  # Prefer a square layout
 n_rows, n_cols = grid_size, math.ceil(num_species / grid_size)
 
+# Set the style for better visualization
+plt.style.use('default')  # Use default style instead of seaborn
 fig, axes = plt.subplots(n_rows, n_cols, figsize=(15, 10))
 axes = axes.flatten()  # Flatten in case of 2D array
 
@@ -63,16 +65,27 @@ for idx, (res, species_name) in enumerate(zip(results, species_names)):
     mean_data = np.mean(res.data[:,:,0], axis=0)
     std_data = np.std(res.data[:,:,0], axis=0)
     ax = axes[idx]
-    # ax.scatter(res.time[0], mean_data, label='Mean', s = 0.5)
-    ax.plot(res.time[0], mean_data, label='Mean')
-    ax.fill_between(res.time[0], mean_data - std_data, mean_data + std_data, alpha=0.3, label='std')
+    
+    # Plot mean line with a more visible style
+    ax.plot(res.time[0], mean_data, label='Mean', linewidth=2, color='#1f77b4')
+    
+    # Plot standard deviation with a more visible fill
+    ax.fill_between(res.time[0], 
+                   mean_data - std_data, 
+                   mean_data + std_data, 
+                   alpha=0.2, 
+                   color='#1f77b4',
+                   label='±1 std')
 
+    # Add labels and grid
     if idx >= len(results) - n_cols:
-        ax.set_xlabel('Time [s]')
-    # else:
-    #     ax.set_xticklabels([])
-    ax.set_ylabel(species_name)
-    # ax.legend()
+        ax.set_xlabel('Time [s]', fontsize=10)
+    ax.set_ylabel(species_name, fontsize=10)
+    ax.grid(True, alpha=0.3)
+    
+    # Add legend to the first plot only
+    if idx == 0:
+        ax.legend(loc='upper right', fontsize=8)
 
 # Hide any unused subplots
 for i in range(idx + 1, len(axes)):

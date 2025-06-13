@@ -18,15 +18,13 @@ except ModuleNotFoundError:
 
 def get_ellipsoidity_from_mesh_name(mesh_path):
     """Extract ellipsoidity value from mesh filename."""
-    # Assuming mesh files are named with ellipsoidity value
     filename = os.path.basename(mesh_path)
-    # Extract number from filename - adjust regex pattern based on your naming convention
     match = re.search(r'ellipsoidity_(\d+\.?\d*)', filename)
     if match:
         return float(match.group(1))
     return None
 
-def plot_ellipsoidity_metrics(base_path, ellipsoidity_dir):
+def plot_ellipsoidity_kinetics(base_path, ellipsoidity_dir):
     meshes_dir = join(base_path, "Patrick/meshes_ellipsoidity")
 
     print(f"Looking for results in: {ellipsoidity_dir}")
@@ -39,7 +37,7 @@ def plot_ellipsoidity_metrics(base_path, ellipsoidity_dir):
     
     # Store results for each metric
     ellipsoidity_values = []
-    metric_data = {}
+    kinetic_data = {}
     
     # Process each mesh result
     for mesh_dir in mesh_dirs:
@@ -74,50 +72,82 @@ def plot_ellipsoidity_metrics(base_path, ellipsoidity_dir):
                 # Process each species/metric
                 for res in results:
                     species_name = re.search(r'\.(.*?)\.', res.labels[0]).group(1)
-                    if species_name not in metric_data:
-                        metric_data[species_name] = []
+                    if species_name not in kinetic_data:
+                        kinetic_data[species_name] = {}
                     
-                    # Calculate final value (or other metric of interest)
-                    final_value = np.mean(res.data[:,:,0], axis=0)[-1]  # Taking last timepoint
-                    metric_data[species_name].append(final_value)
+                    # Store all timepoints for all replicates
+                    kinetic_data[species_name][ellipsoidity] = {
+                        'time': res.time[0],
+                        'data': res.data[:,:,0]  # Shape: (replicates, timepoints)
+                    }
         except Exception as e:
             print(f"Error processing {result_path}: {str(e)}")
             continue
     
-    if not metric_data:
-        print("No metric data was collected. Check if the result files exist and contain the expected data.")
+    if not kinetic_data:
+        print("No kinetic data was collected. Check if the result files exist and contain the expected data.")
         return
         
-    print(f"Collected data for {len(metric_data)} metrics")
+    print(f"Collected data for {len(kinetic_data)} species")
     
-    # Sort data by ellipsoidity
-    sort_idx = np.argsort(ellipsoidity_values)
-    ellipsoidity_values = np.array(ellipsoidity_values)[sort_idx]
-    for species in metric_data:
-        metric_data[species] = np.array(metric_data[species])[sort_idx]
+    # Calculate grid layout
+    num_species = len(kinetic_data)
+    grid_size = math.ceil(math.sqrt(num_species))
+    n_rows, n_cols = grid_size, math.ceil(num_species / grid_size)
     
-    # Create plots
-    num_metrics = len(metric_data)
-    grid_size = math.ceil(math.sqrt(num_metrics))
-    n_rows, n_cols = grid_size, math.ceil(num_metrics / grid_size)
-    
-    fig, axes = plt.subplots(n_rows, n_cols, figsize=(15, 10))
+    # Create a single figure with subplots
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(20, 15))
     axes = axes.flatten()
     
-    for idx, (species, values) in enumerate(metric_data.items()):
-        ax = axes[idx]
-        ax.plot(ellipsoidity_values, values, 'o-', label=species)
-        ax.set_xlabel('Ellipsoidity')
-        ax.set_ylabel('Final Concentration')
-        ax.set_title(species)
-        ax.grid(True)
+    # Create a colormap for different ellipsoidity values
+    # Use the first species to get ellipsoidity values (they should be the same for all species)
+    first_species = list(kinetic_data.keys())[0]
+    sorted_ellipsoidities = sorted(kinetic_data[first_species].keys())
+    colors = plt.cm.viridis(np.linspace(0, 1, len(sorted_ellipsoidities)))
     
-    # Hide unused subplots
+    # Plot each species in its own subplot
+    for idx, (species_name, data) in enumerate(kinetic_data.items()):
+        ax = axes[idx]
+        
+        for ellipsoidity, color in zip(sorted_ellipsoidities, colors):
+            time = data[ellipsoidity]['time']
+            all_replicates = data[ellipsoidity]['data']
+            
+            # Calculate mean and std across replicates
+            mean_values = np.mean(all_replicates, axis=0)
+            std_values = np.std(all_replicates, axis=0)
+            
+            # Plot mean line
+            ax.plot(time, mean_values, 
+                   label=f'Ellipsoidity = {ellipsoidity:.2f}',
+                   color=color,
+                   linewidth=2)
+            
+            # Plot standard deviation as shaded area
+            ax.fill_between(time,
+                          mean_values - std_values,
+                          mean_values + std_values,
+                          color=color,
+                          alpha=0.2)
+        
+        ax.set_xlabel('Time [s]', fontsize=10)
+        ax.set_ylabel('Concentration', fontsize=10)
+        ax.set_title(species_name, fontsize=12)
+        ax.grid(True, alpha=0.3)
+        
+        # Add legend to the first subplot only
+        if idx == 0:
+            ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=8)
+    
+    # Hide any unused subplots
     for i in range(idx + 1, len(axes)):
         fig.delaxes(axes[i])
     
+    # Adjust layout to prevent overlap
     plt.tight_layout()
-    output_path = join(ellipsoidity_dir, 'ellipsoidity_metrics.png')
+    
+    # Save the plot
+    output_path = join(ellipsoidity_dir, 'kinetics_all_species.png')
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
     print(f"Plot saved to: {output_path}")
     plt.close()
@@ -125,4 +155,4 @@ def plot_ellipsoidity_metrics(base_path, ellipsoidity_dir):
 if __name__ == "__main__":
     base_path = get_repo_path()
     ellipsoidity_dir = join(base_path, "Patrick/saved_objects/ellipsoidity")
-    plot_ellipsoidity_metrics(base_path, ellipsoidity_dir) 
+    plot_ellipsoidity_kinetics(base_path, ellipsoidity_dir) 

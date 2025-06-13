@@ -11,7 +11,8 @@ import sys
 import time
 from mpi4py import MPI
 import pandas as pd
-from Patrick.src.Utilities import set_inital_values,get_repo_path
+from .Utilities import set_inital_values,get_repo_path
+import logging
 
 
 class SimManager:
@@ -91,7 +92,7 @@ class SimManager:
         """
         Load and clean the model dataframe dynamically based on the parameters.
         """
-        from src.Utilities import dataframe_cleanup
+        from .Utilities import dataframe_cleanup
         df_path = f"{self.base_path}{self.parameters["big_model_mini_sph_df_path"]}"
         df = pd.read_excel(df_path)
         df = dataframe_cleanup(df, ["Species"])
@@ -130,16 +131,14 @@ class SimManager:
             UserWarning: If the specified model type is not implemented.
         """
         if type == "small":
-            from src.Model_small import create_model
+            from .Model_small import create_model
             self.simulation, self.result_selector, self.mesh = create_model(self.parameters,
                                                                             self.species_names,
                                                                             self.mesh_path,
                                                                             mesh_scale,
                                                                             self.plot_only_run)
-            # self.model_data = pd.read_excel("/home/pb/steps_cell_signaling/Patrick/data_small_model.xlsx")
         elif type == "large":
-            from src.Model_expanded_mini_sph_new import create_model
-            # warnings.warn("The 'large' model type is not yet implemented", UserWarning)
+            from .Model_expanded_mini_sph_new import create_model
             self.simulation, self.result_selector, self.mesh = create_model(self.model_dataframe,
                                                                             self.parameters,
                                                                             self.species_names,
@@ -194,31 +193,25 @@ class SimManager:
                     # self.simulation.cyt.GAP.Count = self.parameters["GAP_0"]
                     # self.simulation.cyt.ERK.Count = self.parameters["ERK_0"]
                     # self.simulation.cyt.P3.Count = self.parameters["P3_0"]
-
-                    self.simulation.nuc_mem.ERKp.DiffusionActive = True
+                    try:
+                        self.simulation.nuc_mem.ERKp.DiffusionActive = True
+                    except:
+                        print("No nucleus membrane found, skipping nucleus membrane diffusion!")
+                        pass
 
                     start_time = time.time()
                     self.simulation.run(self.endtime)
                     end_time = time.time()
+                    runtime = end_time - start_time
+                    sum_of_runtimes += runtime
+                    logging.info(f"Run {i+1} completed in {runtime:.2f} seconds")
 
-                    print(f"Run completed in {end_time - start_time:.2f} seconds.")
-                    sum_of_runtimes += (end_time - start_time)
-            print(f"All runs completed in {sum_of_runtimes:.2f} seconds")
+            avg_runtime = sum_of_runtimes / replicats
+            logging.info(f"Average runtime over {replicats} runs: {avg_runtime:.2f} seconds")
+
         else:
-            comm = MPI.COMM_WORLD
-            assert comm.Get_size() == 1, "A plot_only_run only works in serial due to limitations by STEPS. Rerun either without mpirun or with mpirun -n 1 ..."
-
-            from src.InteractivePlotting import interactive_plots
+            from .InteractivePlotting import interactive_plots
             self.simulation.newRun()
-            self.simulation.exo.EGF.Count = self.parameters["EGF_0"]
-            self.simulation.cell_surface.EGFR.Count = self.parameters["EGFR_0"]
-            self.simulation.cyt.GAP.Count = self.parameters["GAP_0"]
-            self.simulation.cyt.ERK.Count = self.parameters["ERK_0"]
-            self.simulation.cyt.P3.Count = self.parameters["P3_0"]
-
-            self.simulation.nuc_mem.ERKp.DiffusionActive = True
-
-            self.result_selector = stsave.ResultSelector(self.simulation)
-            SimControl = interactive_plots(self)
-            SimControl.run()
+            set_inital_values(self, factor = 1)
+            interactive_plots(self.simulation, self.result_selector, self.endtime)
 
