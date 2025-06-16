@@ -143,7 +143,25 @@ class SimManager:
                                                                             self.parameters,
                                                                             self.species_names,
                                                                             self.mesh_path,
+                                                                            mesh_scale,
                                                                             self.plot_only_run)
+        elif type == "large_new":
+            from .Model_large import create_model
+            self.simulation, self.result_selector, self.mesh = create_model(self.model_dataframe,
+                                                                            self.parameters,
+                                                                            self.species_names,
+                                                                            self.mesh_path,
+                                                                            mesh_scale,
+                                                                            self.plot_only_run)
+        elif type == "intermediate":
+            from .Model_intermediate import create_model
+            self.simulation, self.result_selector, self.mesh = create_model(self.model_dataframe,
+                                                                            self.parameters,
+                                                                            self.species_names,
+                                                                            self.mesh_path,
+                                                                            mesh_scale,
+                                                                            self.plot_only_run)
+        
         else:
             warnings.warn(f"The '{type}' model type is not yet implemented", UserWarning)
 

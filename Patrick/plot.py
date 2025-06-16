@@ -37,15 +37,15 @@ def traverse_datasets(hdf_file):
 base_path = get_repo_path()
 # hdf_path = "/home/pb/steps_cell_signaling/Patrick/saved_objects/ellipsoidity_2/mesh_0/result"
 # hdf_path = f"{base_path}Patrick/saved_objects/testing/test3"
-hdf_path = f"/home/pb/steps_cell_signaling/Patrick/saved_objects/ellipsoidity/mesh_0/result"
+hdf_path = f"/home/pb/steps_cell_signaling/Patrick/saved_objects/testing/large_model_test"
 # traverse_datasets(hdf_path + ".h5")
 # hdf = stsave.HDF5Handler("/home/pb/steps_cell_signaling/Patrick/saved_objects/initial_run/parallel_run_1")
 # hdf = stsave.HDF5Handler("/home/pb/steps_cell_signaling/Patrick/saved_objects/full_run/large_model")
 hdf = stsave.HDF5Handler(hdf_path)
 # with stsave.HDF5Handler("/home/pb/steps_cell_signaling/Patrick/saved_objects/initial_run/parallel_run_1") as hdf:
 # results = hdf["long_run"].results
-# results = hdf["test"].results
-results = hdf["ellipsoidity"].results
+results = hdf["test"].results
+# results = hdf["ellipsoidity"].results
 
 # extract the species names for the result_selector label via regex
 full_labels = [x.labels for x in results]
