@@ -9,12 +9,11 @@ import math
 import os
 from os.path import join, dirname, abspath
 import sys
-sys.path.append(abspath(join(dirname(__file__), "../")))  # Add project root to path
+# Add the project root directory to Python path
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
+sys.path.insert(0, project_root)
 
-try:
-    from Patrick.src.Utilities import get_repo_path
-except ModuleNotFoundError:
-    from src.Utilities import get_repo_path
+from Patrick.src.Utilities import get_repo_path
 
 def get_ellipsoidity_from_mesh_name(mesh_path):
     """Extract ellipsoidity value from mesh filename."""
@@ -24,7 +23,7 @@ def get_ellipsoidity_from_mesh_name(mesh_path):
         return float(match.group(1))
     return None
 
-def plot_ellipsoidity_kinetics(base_path, ellipsoidity_dir):
+def plot_ellipsoidity_kinetics(base_path, ellipsoidity_dir, figsize=(20, 15), exclude_species=None, output_filename='kinetics_all_species.png'):
     meshes_dir = join(base_path, "Patrick/meshes_ellipsoidity")
 
     print(f"Looking for results in: {ellipsoidity_dir}")
@@ -90,13 +89,18 @@ def plot_ellipsoidity_kinetics(base_path, ellipsoidity_dir):
         
     print(f"Collected data for {len(kinetic_data)} species")
     
+    # Exclude specified species if requested
+    if exclude_species is not None:
+        kinetic_data = {k: v for k, v in kinetic_data.items() if k not in exclude_species}
+        print(f"Plotting after excluding species: {exclude_species}. Remaining: {list(kinetic_data.keys())}")
+    
     # Calculate grid layout
     num_species = len(kinetic_data)
     grid_size = math.ceil(math.sqrt(num_species))
-    n_rows, n_cols = grid_size, math.ceil(num_species / grid_size)
+    n_rows, n_cols = math.ceil(num_species / grid_size), grid_size
     
     # Create a single figure with subplots
-    fig, axes = plt.subplots(n_rows, n_cols, figsize=(20, 15))
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=figsize)
     axes = axes.flatten()
     
     # Create a colormap for different ellipsoidity values
@@ -113,9 +117,10 @@ def plot_ellipsoidity_kinetics(base_path, ellipsoidity_dir):
             time = data[ellipsoidity]['time']
             all_replicates = data[ellipsoidity]['data']
             
-            # Calculate mean and std across replicates
+            # Calculate mean and SEM across replicates
             mean_values = np.mean(all_replicates, axis=0)
-            std_values = np.std(all_replicates, axis=0)
+            n_replicates = all_replicates.shape[0]
+            sem_values = np.std(all_replicates, axis=0, ddof=1) / np.sqrt(n_replicates)
             
             # Plot mean line
             ax.plot(time, mean_values, 
@@ -123,36 +128,40 @@ def plot_ellipsoidity_kinetics(base_path, ellipsoidity_dir):
                    color=color,
                    linewidth=2)
             
-            # Plot standard deviation as shaded area
+            # Plot standard error of the mean as shaded area
             ax.fill_between(time,
-                          mean_values - std_values,
-                          mean_values + std_values,
+                          mean_values - sem_values,
+                          mean_values + sem_values,
                           color=color,
                           alpha=0.2)
         
         ax.set_xlabel('Time [s]', fontsize=10)
-        ax.set_ylabel('Concentration', fontsize=10)
-        ax.set_title(species_name, fontsize=12)
+        ax.set_ylabel(species_name, fontsize=10)
+        # ax.set_title(species_name, fontsize=12)
         ax.grid(True, alpha=0.3)
-        
-        # Add legend to the first subplot only
-        if idx == 0:
-            ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=8)
     
     # Hide any unused subplots
     for i in range(idx + 1, len(axes)):
         fig.delaxes(axes[i])
     
+    # Add a single legend for all lines, outside the grid to the right of the top row
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc='upper left', bbox_to_anchor=(1.02, 1), fontsize=8, borderaxespad=0.)
+    
     # Adjust layout to prevent overlap
     plt.tight_layout()
     
     # Save the plot
-    output_path = join(ellipsoidity_dir, 'kinetics_all_species.png')
+    output_path = join(ellipsoidity_dir, output_filename)
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
     print(f"Plot saved to: {output_path}")
     plt.close()
 
 if __name__ == "__main__":
     base_path = get_repo_path()
-    ellipsoidity_dir = join(base_path, "Patrick/saved_objects/ellipsoidity")
-    plot_ellipsoidity_kinetics(base_path, ellipsoidity_dir) 
+    ellipsoidity_dir = join(base_path, "Patrick/saved_objects/ellipsoidity_few_slow_long")
+    plot_ellipsoidity_kinetics(base_path, 
+                               ellipsoidity_dir, 
+                               figsize=(10, 5), 
+                               exclude_species=["ERK", "EGF"], 
+                               output_filename='kinetics_all_species.png') 

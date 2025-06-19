@@ -1,20 +1,23 @@
 import steps.interface
 import steps.saving as stsave
+import os
+import sys
+
+# Add the project root directory to Python path
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
+sys.path.insert(0, project_root)
+
+from Patrick.src.Utilities import get_repo_path
 from matplotlib import pyplot as plt
 import seaborn as sns
 import h5py
 import numpy as np
 import re
 import math
-import os
-from os.path import join, dirname, abspath
-import sys
-sys.path.append(abspath(join(dirname(__file__), "../")))  # Add project root to path
+from os.path import join
 
-try:
-    from Patrick.src.Utilities import get_repo_path
-except ModuleNotFoundError:
-    from src.Utilities import get_repo_path
+
+
 
 def get_ellipsoidity_from_mesh_name(mesh_path):
     """Extract ellipsoidity value from mesh filename."""

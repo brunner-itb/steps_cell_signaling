@@ -4,12 +4,15 @@ setup.py
 Patrick/__init__.py
 Patrick/parameters.py
 Patrick/plot.py
+Patrick/run_intermediate.py
 Patrick/run_large.py
 Patrick/run_small.py
 Patrick/species.py
 Patrick/src/InteractivePlotting.py
 Patrick/src/MeshProcessor.py
 Patrick/src/Model_expanded_mini_sph_new.py
+Patrick/src/Model_intermediate.py
+Patrick/src/Model_large.py
 Patrick/src/Model_small.py
 Patrick/src/SimManager.py
 Patrick/src/Utilities.py

@@ -11,7 +11,7 @@ import pandas as pd
 
 #%%
 
-mesh_path = f'/home/evelyn/shared_files/signaling_repo/steps_cell_signaling/Patrick/meshes/.inp/kugel_7.5-ext.inp'
+mesh_path = f'/home/pb/steps_cell_signaling/Patrick/meshes_ellipsoidity/ellipsoidity_0.5.inp'
 assert os.path.exists(mesh_path)
 
 mdl = Model()
@@ -70,7 +70,7 @@ ax = fig.add_subplot(projection='3d')
 plotTriangles(ax, cyt.surface, (0.1, 0.2, 0.5, 0.09))
 plotTriangles(ax, exo.surface, (0.1, 0.2, 0.5, 0.09))
 
-ax.view_init(elev=0, azim=0, roll=0)
+ax.view_init(elev=90, azim=-90, roll=0)
 ax.set_xlim(mesh.bbox.min.x, mesh.bbox.max.x)
 ax.set_ylim(mesh.bbox.min.y, mesh.bbox.max.y)
 ax.set_zlim(mesh.bbox.min.z, mesh.bbox.max.z)
@@ -78,5 +78,8 @@ ax.set_xlabel('x position [m]')
 ax.set_ylabel('y position [m]')
 ax.set_zlabel('z position [m]')
 ax.set_aspect('equal')
-#plt.savefig(f"Plots/surface/3D_hexa2.pdf")
+
+# Save the plot with a filename based on the mesh name, handling dots correctly
+filename = os.path.splitext(os.path.basename(mesh_path))[0]
+plt.savefig(f"/home/pb/steps_cell_signaling/Patrick/meshes_ellipsoidity/{filename}.png")
 plt.show()

@@ -4,7 +4,7 @@ import steps.geom as stgeom
 import steps.rng as strng
 import steps.sim as stsim
 import steps.saving as stsave
-from src.Utilities import molar_to_molecules, nostdout
+from Patrick.src.Utilities import molar_to_molecules, nostdout
 import numpy as np
 import os
 
@@ -160,9 +160,9 @@ def create_model(p, species_names, mesh_path, mesh_scale, plot_only_run):
             species_dict["EGF_EGFRp2_GAP"].s + species_dict["ERK"].i < r[5] > species_dict["EGF_EGFRp2_GAP"].s + species_dict["ERKp"].i
 
             r[1].K = 3e7, 38e-4   # 1/Ms
-            r[2].K = 1e7 * 100, 0.1   # 1/Ms
-            r[3].K = 1 * 100, 0.01  # 1/s
-            r[4].K = 1e6 * 100 , 0.2   # 1/Ms 1e6, 0.2
+            r[2].K = 1e7, 0.1   # 1/Ms
+            r[3].K = 1, 0.01  # 1/s
+            r[4].K = 1e6 , 0.2   # 1/Ms 1e6, 0.2
             r[5].K = p["k[0]"], 0.1 #1e8 * c1, 0.1 * c1
 
             stmodel.Diffusion(species_dict["EGFR"], p["DC"]/10)

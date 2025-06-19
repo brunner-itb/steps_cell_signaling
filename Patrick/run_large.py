@@ -50,7 +50,7 @@ try:
 
     # Run the simulation
     logging.info("Running the simulation...")
-    sm.run(replicats = 1)
+    sm.run(replicats = 20)
     logging.info("Simulation completed successfully.")
 except Exception as e:
     logging.error(f"An error occurred: {e}", exc_info=True)

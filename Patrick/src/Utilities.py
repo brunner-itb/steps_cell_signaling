@@ -65,7 +65,7 @@ def set_inital_values(sim_manager, factor):
     - If a value is NaN, it defaults to 0.
     - Any `SolverCallError` from STEPS API is caught and ignored.
     '''
-    df_path = f"{sim_manager.base_path}{sim_manager.parameters["big_model_mini_sph_df_path"]}"
+    df_path = f"{sim_manager.base_path}{sim_manager.parameters["initial_conditions_path"]}"
     df = pd.read_excel(df_path)
     df = dataframe_cleanup(df, ["Species"])
 

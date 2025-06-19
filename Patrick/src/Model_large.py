@@ -4,7 +4,6 @@ import steps.geom as stgeom
 import steps.rng as strng
 import steps.sim as stsim
 import steps.saving as stsave
-from src.Utilities import molar_to_molecules, nostdout
 import os
 import time
 import sys
