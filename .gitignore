@@ -15,3 +15,6 @@
 /.idea/
 /Patrick/.logs/
 
+Patrick/scripts/large_model/.logs/
+Patrick/src/__pycache__/
+Patrick/scripts/ellipsoidity_scan/__pycache__/

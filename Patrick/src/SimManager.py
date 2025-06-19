@@ -93,7 +93,7 @@ class SimManager:
         Load and clean the model dataframe dynamically based on the parameters.
         """
         from .Utilities import dataframe_cleanup
-        df_path = f"{self.base_path}{self.parameters["big_model_mini_sph_df_path"]}"
+        df_path = f"{self.base_path}{self.parameters["initial_conditions_path"]}"
         df = pd.read_excel(df_path)
         df = dataframe_cleanup(df, ["Species"])
         self.model_dataframe = df

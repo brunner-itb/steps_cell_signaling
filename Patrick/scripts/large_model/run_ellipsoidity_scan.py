@@ -51,7 +51,8 @@ try:
         return None
 
     # Run simulation for each mesh
-    for mesh_idx, mesh_path in enumerate(mesh_files[::5]):
+    # for mesh_idx, mesh_path in enumerate(mesh_files[::5]):
+    for mesh_idx, mesh_path in enumerate(mesh_files[0:1]):
         ellipsoidity = get_ellipsoidity_from_mesh_name(mesh_path)
         if ellipsoidity is None:
             logging.warning(f"Could not extract ellipsoidity from {mesh_path}, using mesh_idx instead.")
@@ -73,7 +74,7 @@ try:
         logging.info("Model loaded successfully.")
 
         logging.info("Running the simulation...")
-        sm.run(replicats=20)
+        sm.run(replicats=1)
         logging.info(f"Simulation completed for mesh {mesh_idx + 1}")
 
     logging.info("All simulations completed successfully.")
